@@ -6,163 +6,75 @@ type PrintableOrderProps = {
     orderId?: string | null;
 };
 
-// 收集所有項目並按類別分組
-const formatOrderByCategory = (order: Order | OrderData, orderId?: string | null) => {
-    const finalOrderId = 'id' in order ? order.id : orderId;
-    
-    // 合併主餐
-    const mainItemsMap = new Map();
-    order.items.forEach(item => {
-        const name = item.item.name.replace(/半全餐|半套餐/g, '套餐').replace(/組合餐/g, '組合餐');
-        const key = name;
-        if (mainItemsMap.has(key)) {
-            const existing = mainItemsMap.get(key);
-            existing.quantity += item.quantity;
-            existing.totalPrice += parseFloat(item.totalPrice);
-        } else {
-            mainItemsMap.set(key, {
-                name,
-                quantity: item.quantity,
-                totalPrice: parseFloat(item.totalPrice)
-            });
-        }
-    });
-
-    // 按類別收集配料
-    const categories = {
-        主餐: Array.from(mainItemsMap.values()).map(item => 
-            `${item.name}x${item.quantity}$${item.totalPrice}`
-        ),
-        炸物: new Map(),
-        飲料: new Map(),
-        醬料: new Map(),
-        加購: new Map(),
-        熟度: new Map(),
-        附餐: new Map()
-    };
-
-    order.items.forEach(item => {
-        // 炸物
-        if (item.selectedComponent) {
-            Object.entries(item.selectedComponent).forEach(([name, quantity]) => {
-                const current = categories.炸物.get(name) || 0;
-                categories.炸物.set(name, current + quantity);
-            });
-        }
-
-        // 飲料
-        if (item.selectedDrinks) {
-            Object.entries(item.selectedDrinks).forEach(([name, quantity]) => {
-                const current = categories.飲料.get(name) || 0;
-                categories.飲料.set(name, current + quantity);
-            });
-        }
-
-        // 醬料
-        if (item.selectedSauces) {
-            item.selectedSauces.forEach(sauce => {
-                const current = categories.醬料.get(sauce.name) || 0;
-                categories.醬料.set(sauce.name, current + sauce.quantity);
-            });
-        }
-
-        // 加購
-        if (item.selectedAddons) {
-            item.selectedAddons.forEach(addon => {
-                const name = addon.weight ? `${addon.name}${addon.weight}` : addon.name;
-                const current = categories.加購.get(name) || 0;
-                categories.加購.set(name, current + addon.quantity);
-            });
-        }
-
-        // 熟度
-        if (item.selectedDonenesses) {
-            Object.entries(item.selectedDonenesses).forEach(([name, quantity]) => {
-                const current = categories.熟度.get(name) || 0;
-                categories.熟度.set(name, current + quantity);
-            });
-        }
-
-        // 單點加購
-        if (item.selectedSingleChoiceAddon) {
-            const current = categories.加購.get(item.selectedSingleChoiceAddon) || 0;
-            categories.加購.set(item.selectedSingleChoiceAddon, current + item.quantity);
-        }
-    });
-
-    // 格式化每個類別
-    const formatCategory = (itemsMap: Map<string, number>, prefix: string = '') => {
-        if (itemsMap.size === 0) return '';
-        return Array.from(itemsMap.entries())
-            .map(([name, count]) => `${prefix}${name}x${count}`)
-            .join('.');
-    };
-
-    // 組合成單行文字
-    const parts = [
-        `單號:${finalOrderId}`,
-        categories.主餐.join('.'),
-        formatCategory(categories.炸物),
-        formatCategory(categories.飲料),
-        formatCategory(categories.醬料),
-        formatCategory(categories.加購),
-        formatCategory(categories.熟度),
-        `總金額:$${order.totalPrice}`
-    ].filter(part => part !== '');
-
-    return parts.join('.');
-};
-
 export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }) => {
     if (!order) {
         return null;
     }
     
-    const compactText = formatOrderByCategory(order, orderId);
+    const finalOrderId = 'id' in order ? order.id : orderId;
     
     return (
         <div className="bg-white text-black" style={{ 
             width: '350px', 
             margin: '0 auto', 
             lineHeight: '1.2',
-            padding: '2px',
-            fontSize: '18px'
+            padding: '5px',
+            fontSize: '18px',
+            fontWeight: 'bold'
         }}>
-            {/* 標頭 - 緊湊 */}
-            <div className="text-center" style={{ marginBottom: '2px' }}>
-                <div style={{ 
-                    fontSize: '20px', 
-                    fontWeight: 'bold',
-                    marginBottom: '1px'
-                }}>
-                    無名牛排
-                </div>
-                <div style={{ 
-                    fontSize: '18px', 
-                    fontWeight: 'bold',
-                    marginBottom: '2px'
-                }}>
-                    廚房工作單
-                </div>
+            {/* 單號 */}
+            <div style={{ marginBottom: '8px' }}>
+                單號: {finalOrderId} 餐點內容 -
             </div>
 
-            {/* 單行訂單內容 - 無留白 */}
-            <div style={{
-                fontWeight: 'bold',
-                lineHeight: '1.1',
-                wordWrap: 'break-word',
-                fontSize: '16px',
-                padding: '0',
-                margin: '0'
-            }}>
-                {compactText}
+            {/* 餐點內容 1 */}
+            <div style={{ marginBottom: '8px' }}>
+                <div>數量</div>
+                <div>x3</div>
+                <div>小計</div>
+                <div>$1737</div>
+                <div>板腱牛排+脆皮炸雞(炸魚)套餐</div>
             </div>
 
-            {/* 頁尾 - 緊湊 */}
-            <div className="text-center" style={{ marginTop: '3px' }}>
-                <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
-                    感謝您的訂購！
-                </div>
+            {/* 餐點內容 2 */}
+            <div style={{ marginBottom: '8px' }}>
+                <div>數量</div>
+                <div>x2</div>
+                <div>小計</div>
+                <div>$500</div>
+                <div>英式炸魚套餐</div>
+            </div>
+
+            {/* 分隔線 */}
+            <div style={{ marginBottom: '8px' }}>- 總計列表 -</div>
+
+            {/* 炸物總計 */}
+            <div style={{ marginBottom: '6px' }}>
+                炸物總計:
+                <div>- 炸魚 x3</div>
+            </div>
+
+            {/* 飲料總計 */}
+            <div style={{ marginBottom: '6px' }}>
+                飲料總計:
+                <div>- 無糖紅茶 x3</div>
+                <div>- 冰涼可樂 x2</div>
+            </div>
+
+            {/* 醬料總計 */}
+            <div style={{ marginBottom: '6px' }}>
+                醬料總計:
+                <div>- 泡菜 x4</div>
+                <div>- 生蒜片 x2</div>
+                <div>- 黑胡椒 x2</div>
+                <div>- 巴薩米克醋 x1</div>
+                <div>- 蒜味醬 x1</div>
+            </div>
+
+            {/* 加購總計 */}
+            <div style={{ marginBottom: '6px' }}>
+                加購總計:
+                <div>- 豬排加購 5oz x2</div>
             </div>
         </div>
     );
