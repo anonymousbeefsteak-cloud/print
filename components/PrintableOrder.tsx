@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { Order, CartItem, OrderData } from '../types';
 
 type PrintableOrderProps = {
@@ -6,134 +6,114 @@ type PrintableOrderProps = {
     orderId?: string | null;
 };
 
-// 收集所有項目並格式化為緊湊單行
-const formatOrderToCompactLines = (order: Order | OrderData, orderId?: string | null) => {
-    const finalOrderId = 'id' in order ? order.id : orderId;
-    
-    // 合併主餐
-    const mainItemsMap = new Map();
-    order.items.forEach(item => {
-        const mainItemName = item.item.name.replace(/半全餐|半套餐/g, '套餐');
-        if (mainItemsMap.has(mainItemName)) {
-            const existing = mainItemsMap.get(mainItemName);
-            existing.quantity += item.quantity;
-            existing.totalPrice += parseFloat(item.totalPrice);
-        } else {
-            mainItemsMap.set(mainItemName, {
-                name: mainItemName,
-                quantity: item.quantity,
-                totalPrice: parseFloat(item.totalPrice)
-            });
-        }
-    });
+const renderOrderItem = (item: CartItem) => (
+    <li key={item.cartId} className="mb-2 text-left">
+        <p className="font-semibold">{item.item.name} (${item.item.price}) x{item.quantity}</p>
+        <div className="text-xs text-slate-500 pl-2 mt-1 space-y-0.5">
+            {item.selectedDonenesses && Object.keys(item.selectedDonenesses).length > 0 && <p>熟度: {Object.entries(item.selectedDonenesses).map(([d, q]) => `${d}x${q}`).join(', ')}</p>}
+            {item.selectedSideChoices && Object.keys(item.selectedSideChoices).length > 0 && <p>簡餐附餐: {Object.entries(item.selectedSideChoices).map(([d, q]) => `${d}x${q}`).join(', ')}</p>}
+            {item.selectedMultiChoice && Object.keys(item.selectedMultiChoice).length > 0 && <p>口味: {Object.entries(item.selectedMultiChoice).map(([d, q]) => `${d}x${q}`).join(', ')}</p>}
+            {item.selectedDrinks && Object.keys(item.selectedDrinks).length > 0 && <p>飲料: {Object.entries(item.selectedDrinks).map(([d, q]) => `${d}x${q}`).join(', ')}</p>}
+            {item.selectedSauces && item.selectedSauces.length > 0 && <p>醬料: {item.selectedSauces.map(s => `${s.name}x${s.quantity}`).join(', ')}</p>}
+            {item.selectedDesserts && item.selectedDesserts.length > 0 && <p>甜品: {item.selectedDesserts.map(d => `${d.name}x${d.quantity}`).join(', ')}</p>}
+            {item.selectedPastas && item.selectedPastas.length > 0 && <p>義麵: {item.selectedPastas.map(p => `${p.name}x${p.quantity}`).join(', ')}</p>}
+            {item.selectedSingleChoiceAddon && <p>單點加購: {item.selectedSingleChoiceAddon}</p>}
+            {item.selectedAddons && item.selectedAddons.length > 0 && <p>其他加購: {item.selectedAddons.map(a => `${a.name} ($${a.price}) x${a.quantity}`).join(', ')}</p>}
+            {item.selectedNotes && <p>備註: {item.selectedNotes}</p>}
+        </div>
+    </li>
+);
 
-    // 格式化主餐
-    const mainItemsText = Array.from(mainItemsMap.values())
-        .map(item => `${item.name} x${item.quantity}($${item.totalPrice})`)
-        .join('');
-
-    // 收集所有配料
-    const allIngredients = [];
-    
-    order.items.forEach(item => {
-        // 熟度
-        if (item.selectedDonenesses) {
-            Object.entries(item.selectedDonenesses).forEach(([name, quantity]) => {
-                for (let i = 0; i < quantity; i++) {
-                    allIngredients.push(`板腱${name}熟`);
-                }
-            });
-        }
-
-        // 炸物
-        if (item.selectedComponent) {
-            Object.entries(item.selectedComponent).forEach(([name, quantity]) => {
-                for (let i = 0; i < quantity; i++) {
-                    allIngredients.push(name);
-                }
-            });
-        }
-
-        // 飲料
-        if (item.selectedDrinks) {
-            Object.entries(item.selectedDrinks).forEach(([name, quantity]) => {
-                for (let i = 0; i < quantity; i++) {
-                    allIngredients.push(name);
-                }
-            });
-        }
-
-        // 醬料
-        if (item.selectedSauces) {
-            item.selectedSauces.forEach(sauce => {
-                for (let i = 0; i < sauce.quantity; i++) {
-                    allIngredients.push(sauce.name);
-                }
-            });
-        }
-
-        // 加購
-        if (item.selectedAddons) {
-            item.selectedAddons.forEach(addon => {
-                for (let i = 0; i < addon.quantity; i++) {
-                    const name = addon.weight ? `${addon.name} ${addon.weight}` : addon.name;
-                    allIngredients.push(name);
-                }
-            });
-        }
-    });
-
-    // 計算配料數量
-    const ingredientCounts = new Map();
-    allIngredients.forEach(ingredient => {
-        ingredientCounts.set(ingredient, (ingredientCounts.get(ingredient) || 0) + 1);
-    });
-
-    // 格式化配料
-    const ingredientsText = Array.from(ingredientCounts.entries())
-        .map(([name, count]) => `-${name} x${count}`)
-        .join('');
-
-    return {
-        line1: `單號:${finalOrderId}總計:$${order.totalPrice}`,
-        line2: mainItemsText,
-        line3: ingredientsText
-    };
-};
 
 export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }) => {
     if (!order) {
-        return null;
+        return null; // Safety check to prevent crashing if order data is missing.
     }
     
-    const compactLines = formatOrderToCompactLines(order, orderId);
+    const comboSummary = useMemo(() => {
+        const summary = {
+            mainCourses: 0,
+            fries: 0,
+            soups: 0,
+            breads: 0,
+            drinks: 0,
+        };
+
+        const comboItems = order.items.filter(
+            item => item.categoryTitle === '套餐' || item.categoryTitle === '組合餐'
+        );
+
+        if (comboItems.length === 0) return null;
+
+        comboItems.forEach(cartItem => {
+            const desc = cartItem.item.description || '';
+            const quantity = cartItem.quantity;
+            const customs = cartItem.item.customizations;
+
+            // Main courses
+            summary.mainCourses += quantity;
+
+            // Drinks are often a choice
+            if (customs.drinkChoice) {
+                const drinkCount = Object.values(cartItem.selectedDrinks || {}).reduce((a, b) => a + (b || 0), 0);
+                summary.drinks += drinkCount;
+            }
+
+            // Handle items with explicit side choices
+            if (customs.sideChoice) {
+                const sideChoices = cartItem.selectedSideChoices || {};
+                for (const [side, count] of Object.entries(sideChoices)) {
+                    if (side.includes('日湯')) summary.soups += count;
+                    if (side.includes('脆薯')) summary.fries += count;
+                    if (side.includes('飲料')) summary.drinks += count; // Can also be a side choice
+                }
+            } else {
+                // Handle standard combos with implicit sides from description
+                if (desc.includes('日湯')) summary.soups += quantity;
+                if (desc.includes('麵包')) summary.breads += quantity;
+                if (desc.includes('脆薯')) summary.fries += quantity;
+                // If drink is not a choice, it might be an implicit inclusion
+                if (!customs.drinkChoice && desc.includes('飲料')) {
+                     summary.drinks += quantity;
+                }
+            }
+        });
+        
+        if (Object.values(summary).every(v => v === 0)) {
+            return null;
+        }
+
+        return summary;
+    }, [order]);
+    
+    const finalOrderId = 'id' in order ? order.id : orderId;
     
     return (
-        <div style={{ 
-            width: '72mm', // 熱感紙標準寬度
-            margin: '0 auto', 
-            lineHeight: '1.1',
-            padding: '2mm',
-            fontSize: '14px',
-            fontWeight: 'bold',
-            fontFamily: 'Arial, sans-serif',
-            wordWrap: 'break-word',
-            whiteSpace: 'pre-line'
-        }}>
-            {/* 第一行：單號和總計 */}
-            <div style={{ marginBottom: '1mm' }}>
-                {compactLines.line1}
-            </div>
+        <div className="p-4 bg-white">
+            <h3 className="text-lg font-bold text-center mb-2">訂單摘要</h3>
+            {finalOrderId && <p><strong>訂單號:</strong> {finalOrderId}</p>}
+            <p><strong>顧客:</strong> {order.customerInfo.name} ({order.customerInfo.phone})</p>
+            <p><strong>類型:</strong> {order.orderType} {order.customerInfo.tableNumber && `(${order.customerInfo.tableNumber}桌)`}</p>
+            <hr className="my-2" />
+            <ul className="text-sm">
+                {order.items.map(renderOrderItem)}
+            </ul>
+            <hr className="my-2" />
+            <p className="text-right font-bold text-lg">總計: ${order.totalPrice}</p>
 
-            {/* 第二行：主餐項目 */}
-            <div style={{ marginBottom: '1mm' }}>
-                {compactLines.line2}
-            </div>
-
-            {/* 第三行：所有配料 */}
-            <div>
-                {compactLines.line3}
-            </div>
+            {comboSummary && (
+                <>
+                    <hr className="my-2 border-dashed" />
+                    <h4 className="font-bold text-center mb-1">套餐附餐總覽</h4>
+                    <ul className="text-sm">
+                        {comboSummary.mainCourses > 0 && <li className="flex justify-between"><span>主餐:</span> <span>{comboSummary.mainCourses} 份</span></li>}
+                        {comboSummary.soups > 0 && <li className="flex justify-between"><span>湯品:</span> <span>{comboSummary.soups} 份</span></li>}
+                        {comboSummary.breads > 0 && <li className="flex justify-between"><span>麵包:</span> <span>{comboSummary.breads} 份</span></li>}
+                        {comboSummary.fries > 0 && <li className="flex justify-between"><span>脆薯:</span> <span>{comboSummary.fries} 份</span></li>}
+                        {comboSummary.drinks > 0 && <li className="flex justify-between"><span>飲料:</span> <span>{comboSummary.drinks} 份</span></li>}
+                    </ul>
+                </>
+            )}
         </div>
     );
 };
