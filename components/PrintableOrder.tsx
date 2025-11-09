@@ -1,393 +1,169 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import type { MenuItem, MenuCategory, Addon, CartItem, OrderData, OptionsData } from './types';
-import { apiService } from './services/apiService.ts';
-import { MENU_DATA, ADDONS } from './constants';
-import Menu from './components/Menu';
-import ItemModal from './components/ItemModal';
-import Cart from './components/Cart';
-import OrderQueryModal from './components/OrderQueryModal';
-import ConfirmationModal from './components/ConfirmationModal';
-import WelcomeModal from './components/WelcomeModal';
-import AIAssistantModal from './components/AIAssistantModal';
-import { CartIcon, RefreshIcon, SearchIcon, SparklesIcon } from './components/icons';
-import { AdminDashboard } from './components/AdminDashboard.tsx';
-import { PrintableOrder } from './components/PrintableOrder';
+import React from 'react';
+import type { Order, CartItem, OrderData } from '../types';
 
-const App: React.FC = () => {
-    const [cart, setCart] = useState<CartItem[]>([]);
-    const [isCartOpen, setIsCartOpen] = useState(false);
-    const [selectedItem, setSelectedItem] = useState<{ item: MenuItem, category: MenuCategory } | null>(null);
-    const [editingCartItem, setEditingCartItem] = useState<CartItem | null>(null);
-    const [isQueryModalOpen, setIsQueryModalOpen] = useState(false);
-    const [isEditingFromCart, setIsEditingFromCart] = useState(false);
-    const [confirmationData, setConfirmationData] = useState<{ orderId: string; orderData: OrderData } | null>(null);
-    const [printContent, setPrintContent] = useState<React.ReactNode | null>(null);
-    const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
-    const [isAiModalOpen, setIsAiModalOpen] = useState(false);
-    const [isAdminDashboardOpen, setIsAdminDashboardOpen] = useState(false);
-
-    const [menuData, setMenuData] = useState<MenuCategory[]>([]);
-    const [addons, setAddons] = useState<Addon[]>([]);
-    const [options, setOptions] = useState<OptionsData>({ sauces: [], dessertsA: [], dessertsB: [], pastasA: [], pastasB: [], coldNoodles: [] });
-    const [loading, setLoading] = useState(true);
-    const [isRefreshing, setIsRefreshing] = useState(false);
-    const [notification, setNotification] = useState<string | null>(null);
-
-    const fetchData = useCallback(async () => {
-        setNotification(null);
-        const { menu, addons, options: apiOptions, from } = await apiService.getMenuAndAddons();
-
-        if (from === 'api' && (!menu || menu.length === 0 || menu.every(cat => cat.items.length === 0))) {
-            setMenuData(MENU_DATA);
-            setAddons(ADDONS);
-            setNotification('成功連接伺服器，但菜單是空的。請檢查後台 Google Sheet 是否已填入資料，或執行「一鍵設定工作表」。');
-        } else {
-            setMenuData(menu);
-            setAddons(addons);
-        }
-
-        setOptions(apiOptions);
-
-        if (from === 'fallback') {
-            setNotification('無法連接伺服器，目前顯示的是離線菜單。');
-        }
-    }, []);
-    
-    useEffect(() => {
-        if (printContent) {
-            const handleAfterPrint = () => {
-                setPrintContent(null);
-                // 列印完成後重新載入
-                window.location.reload();
-            };
-
-            window.addEventListener('afterprint', handleAfterPrint, { once: true });
-            
-            const timer = setTimeout(() => {
-                window.print();
-            }, 100);
-
-            // 備用方案：如果 afterprint 事件沒觸發，5秒後強制重新載入
-            const backupTimer = setTimeout(() => {
-                window.removeEventListener('afterprint', handleAfterPrint);
-                setPrintContent(null);
-                window.location.reload();
-            }, 5000);
-
-            return () => {
-                clearTimeout(timer);
-                clearTimeout(backupTimer);
-                window.removeEventListener('afterprint', handleAfterPrint);
-            };
-        }
-    }, [printContent]);
-
-    const handlePrintRequest = (content: React.ReactNode) => {
-        setPrintContent(content);
-    };
-
-    useEffect(() => {
-        const initialLoad = async () => {
-            setLoading(true);
-            await fetchData();
-            setLoading(false);
-            if (sessionStorage.getItem('welcomeAgreed') !== 'true') {
-                setIsWelcomeModalOpen(true);
-            }
-        };
-        initialLoad();
-    }, [fetchData]);
-
-    const handleWelcomeAgree = () => {
-        sessionStorage.setItem('welcomeAgreed', 'true');
-        setIsWelcomeModalOpen(false);
-    };
-
-    const handleRefresh = async () => {
-        setIsRefreshing(true);
-        await fetchData();
-        setIsRefreshing(false);
-    };
-    
-    useEffect(() => {
-        const handleAdminKey = (event: KeyboardEvent) => {
-            if (event.key === '`') { // Tilde key
-                setIsAdminDashboardOpen(true);
-            }
-        };
-        window.addEventListener('keydown', handleAdminKey);
-        return () => window.removeEventListener('keydown', handleAdminKey);
-    }, []);
-
-    const handleSelectItem = (item: MenuItem, category: MenuCategory) => {
-        if (!item.isAvailable) return;
-        setSelectedItem({ item, category });
-    };
-
-    const handleCloseModal = () => {
-        setSelectedItem(null);
-        setEditingCartItem(null);
-        setIsEditingFromCart(false); 
-    };
-    
-    const handleEditItem = (cartId: string) => {
-        const itemToEdit = cart.find(i => i.cartId === cartId);
-        if(itemToEdit) {
-            const category = menuData.find(c => c.title === itemToEdit.categoryTitle) || { title: itemToEdit.categoryTitle, items: [] };
-            setIsEditingFromCart(true);
-            setEditingCartItem(itemToEdit);
-            setSelectedItem({ item: itemToEdit.item, category });
-        }
-    };
-
-    const createCartItemObject = (item: MenuItem, quantity: number, options: any, category: MenuCategory): Omit<CartItem, 'cartId'> => {
-        const { donenesses, drinks, addons, notes, sauces, desserts, pastas, singleChoiceAddon, multiChoice, componentChoices, sideChoices } = options;
-        
-        const generateStableObjectString = (obj: object) => {
-            if (!obj || Object.keys(obj).length === 0) return '';
-            return JSON.stringify(Object.fromEntries(Object.entries(obj).filter(([, val]) => val && Number(val) > 0).sort(([keyA], [keyB]) => keyA.localeCompare(keyB))));
-        };
-        
-        const singleChoicePrice = singleChoiceAddon && item.customizations.singleChoiceAddon ? item.customizations.singleChoiceAddon.price : 0;
-        const totalAddonPrice = (addons || []).reduce((sum: number, addon: { price: number; quantity: number; }) => sum + (addon.price * addon.quantity), 0);
-        const totalPrice = (item.price + singleChoicePrice) * quantity + totalAddonPrice;
-
-        const cartKeyFields = {
-            id: item.id,
-            donenesses: generateStableObjectString(donenesses),
-            drinks: generateStableObjectString(drinks),
-            sideChoices: generateStableObjectString(sideChoices),
-            multiChoice: generateStableObjectString(multiChoice),
-            componentChoices: generateStableObjectString(componentChoices),
-            notes: notes,
-            addons: (addons || []).map((a: { id: string; quantity: any; }) => `${a.id}:${a.quantity}`).sort().join(','),
-            sauces: (sauces || []).map((s: { name: string; quantity: any; }) => `${s.name}:${s.quantity}`).sort().join(','),
-            desserts: (desserts || []).map((d: { name: string; quantity: any; }) => `${d.name}:${d.quantity}`).sort().join(','),
-            pastas: (pastas || []).map((p: { name: string; quantity: any; }) => `${p.name}:${p.quantity}`).sort().join(','),
-            singleChoiceAddon: singleChoiceAddon || 'none',
-        };
-        const cartKey = JSON.stringify(cartKeyFields);
-
-        return {
-            cartKey,
-            item,
-            quantity,
-            categoryTitle: category.title,
-            selectedDonenesses: donenesses,
-            selectedDrinks: drinks,
-            selectedSideChoices: sideChoices,
-            selectedAddons: addons || [],
-            selectedSauces: sauces || [],
-            selectedDesserts: desserts || [],
-            selectedPastas: pastas || [],
-            selectedComponent: componentChoices,
-            selectedNotes: notes,
-            selectedSingleChoiceAddon: singleChoiceAddon,
-            selectedMultiChoice: multiChoice,
-            totalPrice,
-        };
-    };
-    
-    const handleConfirmSelection = (item: MenuItem, quantity: number, options: any, category: MenuCategory) => {
-        const newOrUpdatedCartItem = createCartItemObject(item, quantity, options, category);
-
-        if (editingCartItem && cart.some(i => i.cartId === editingCartItem.cartId)) {
-            setCart(prevCart => prevCart.map(cartItem =>
-                cartItem.cartId === editingCartItem.cartId
-                    ? { ...newOrUpdatedCartItem, cartId: editingCartItem.cartId }
-                    : cartItem
-            ));
-        } else {
-            setCart(prevCart => {
-                const existingItemIndex = prevCart.findIndex(cartItem => cartItem.cartKey === newOrUpdatedCartItem.cartKey);
-                if (existingItemIndex > -1) {
-                    const updatedCart = [...prevCart];
-                    const existingItem = updatedCart[existingItemIndex];
-                    const newQuantity = existingItem.quantity + quantity;
-
-                    const singleChoicePrice = existingItem.selectedSingleChoiceAddon && item.customizations.singleChoiceAddon ? item.customizations.singleChoiceAddon.price : 0;
-                    const totalAddonPrice = (existingItem.selectedAddons || []).reduce((sum, addon) => sum + (addon.price * addon.quantity), 0);
-                    const newTotalPrice = (item.price + singleChoicePrice) * newQuantity + totalAddonPrice;
-
-                    updatedCart[existingItemIndex] = { ...existingItem, quantity: newQuantity, totalPrice: newTotalPrice };
-                    return updatedCart;
-                } else {
-                    const finalCartItem = { ...newOrUpdatedCartItem, cartId: `${newOrUpdatedCartItem.cartKey}-${Date.now()}` };
-                    return [...prevCart, finalCartItem];
-                }
-            });
-        }
-
-        if (isEditingFromCart) {
-            setIsCartOpen(true);
-        }
-    };
-    
-    const handleUpdateQuantity = (cartId: string, newQuantity: number) => {
-        setCart(prevCart => {
-            if (newQuantity <= 0) {
-                return prevCart.filter(item => item.cartId !== cartId);
-            }
-            return prevCart.map(item => {
-                if (item.cartId === cartId) {
-                    const singleChoicePrice = item.selectedSingleChoiceAddon && item.item.customizations.singleChoiceAddon ? item.item.customizations.singleChoiceAddon.price : 0;
-                    const totalAddonPrice = (item.selectedAddons || []).reduce((sum, addon) => sum + (addon.price * addon.quantity), 0);
-                    const newTotalPrice = (item.item.price + singleChoicePrice) * newQuantity + totalAddonPrice;
-                    return { ...item, quantity: newQuantity, totalPrice: newTotalPrice };
-                }
-                return item;
-            });
-        });
-    };
-
-    const handleRemoveFromCart = (cartId: string) => {
-        setCart(prevCart => prevCart.filter(item => item.cartId !== cartId));
-    };
-
-    const handleSubmitOrder = async (orderData: OrderData) => {
-        const result = await apiService.submitOrder(orderData);
-        if (result.success && result.orderId) {
-            setCart([]);
-            setIsCartOpen(false);
-            
-            // 直接列印，不顯示確認畫面
-            const printContent = <PrintableOrder order={orderData} orderId={result.orderId} />;
-            handlePrintRequest(printContent);
-
-            const savedOrders = JSON.parse(localStorage.getItem('steakhouse-orders') || '[]');
-            if (!savedOrders.includes(result.orderId)) {
-                savedOrders.unshift(result.orderId);
-                localStorage.setItem('steakhouse-orders', JSON.stringify(savedOrders.slice(0, 10)));
-            }
-        }
-        return result;
-    };
-    
-    const cartItemCount = useMemo(() => cart.reduce((total, item) => total + item.quantity, 0), [cart]);
-
-    if (loading) {
-        return (
-            <div className="min-h-screen flex flex-col justify-center items-center bg-slate-100">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-green-700"></div>
-                <p className="mt-4 text-slate-600 text-lg">正在載入菜單...</p>
-            </div>
-        );
-    }
-
-    return (
-        <>
-            <div className="print-area">
-              {printContent}
-            </div>
-
-            <div className="no-print">
-                {isWelcomeModalOpen && <WelcomeModal onAgree={handleWelcomeAgree} />}
-                
-                {/* 如果有列印內容，隱藏所有頁面內容 */}
-                {!printContent && (
-                    <div className="min-h-screen bg-slate-100 text-slate-800">
-                        {notification && (
-                            <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 text-center" role="alert">
-                                <p className="font-bold">{notification}</p>
-                            </div>
-                        )}
-                        <header className="bg-white shadow-md sticky top-0 z-20">
-                            <div className="container mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                                <h1 className="text-2xl sm:text-3xl font-bold text-green-800 tracking-wider">無名牛排點餐系統</h1>
-                                <div className="flex items-center gap-2">
-                                    <button onClick={() => setIsQueryModalOpen(true)} className="flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium">
-                                        <SearchIcon className="h-4 w-4"/>
-                                        <span>查詢訂單</span>
-                                    </button>
-                                    <button onClick={handleRefresh} disabled={isRefreshing} className="flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium disabled:opacity-50">
-                                        <RefreshIcon className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}/>
-                                        <span>{isRefreshing ? '刷新中' : '刷新'}</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </header>
-
-                        <main className="container mx-auto p-4 md:p-6 lg:p-8">
-                            <Menu menuData={menuData} onSelectItem={handleSelectItem} />
-                        </main>
-
-                        <footer className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 text-center text-slate-500 text-sm">
-                            <div className="border-t border-slate-200 pt-8 space-y-2">
-                                <p>＊店內最低消費為一份餐點</p>
-                                <p>＊不收服務費，用完餐請回收餐具</p>
-                                <p>＊用餐限九十分鐘請勿飲酒</p>
-                                <p>＊餐點內容以現場出餐為準，餐點現點現做請耐心等候</p>
-                            </div>
-                        </footer>
-
-                        <button
-                            onClick={() => setIsAiModalOpen(true)}
-                            className="fixed bottom-24 right-6 lg:bottom-28 lg:right-10 flex items-center justify-center bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-opacity-50 h-16 w-16"
-                            aria-label="開啟 AI 點餐小幫手"
-                        >
-                            <SparklesIcon className="h-8 w-8" />
-                        </button>
-
-                        {cartItemCount > 0 && (
-                            <button
-                                onClick={() => setIsCartOpen(true)}
-                                className="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 flex items-center justify-center bg-green-700 text-white rounded-full shadow-lg hover:bg-green-800 transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-700 focus:ring-opacity-50 h-16 w-16"
-                                aria-label={`查看購物車，共有 ${cartItemCount} 項商品`}
-                            >
-                                <CartIcon className="h-8 w-8" />
-                                <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold">{cartItemCount}</span>
-                            </button>
-                        )}
-                    </div>
-                )}
-
-                {/* 如果有列印內容，隱藏所有模態框 */}
-                {!printContent && (
-                    <>
-                        <Cart
-                            isOpen={isCartOpen}
-                            onClose={() => setIsCartOpen(false)}
-                            cartItems={cart}
-                            onUpdateQuantity={handleUpdateQuantity}
-                            onRemoveItem={handleRemoveFromCart}
-                            onEditItem={handleEditItem}
-                            onSubmitOrder={handleSubmitOrder}
-                        />
-
-                        {selectedItem && (
-                            <ItemModal
-                                selectedItem={selectedItem}
-                                editingItem={editingCartItem}
-                                addons={addons}
-                                options={options}
-                                onClose={handleCloseModal}
-                                onConfirmSelection={handleConfirmSelection}
-                            />
-                        )}
-                        
-                        <OrderQueryModal
-                            isOpen={isQueryModalOpen}
-                            onClose={() => setIsQueryModalOpen(false)}
-                        />
-
-                        <AdminDashboard 
-                            isOpen={isAdminDashboardOpen}
-                            onClose={() => setIsAdminDashboardOpen(false)}
-                            onPrintRequest={handlePrintRequest}
-                            onAvailabilityUpdate={fetchData}
-                        />
-                        
-                        <AIAssistantModal
-                            isOpen={isAiModalOpen}
-                            onClose={() => setIsAiModalOpen(false)}
-                            menuData={menuData}
-                            addons={addons}
-                        />
-                    </>
-                )}
-            </div>
-        </>
-    );
+type PrintableOrderProps = {
+    order: Order | OrderData | null;
+    orderId?: string | null;
 };
 
-export default App;
+// 收集所有項目並按類別分組
+const formatOrderByCategory = (order: Order | OrderData, orderId?: string | null) => {
+    const finalOrderId = 'id' in order ? order.id : orderId;
+    
+    // 合併主餐
+    const mainItemsMap = new Map();
+    order.items.forEach(item => {
+        const name = item.item.name.replace(/半全餐|半套餐/g, '套餐').replace(/組合餐/g, '組合餐');
+        const key = name;
+        if (mainItemsMap.has(key)) {
+            const existing = mainItemsMap.get(key);
+            existing.quantity += item.quantity;
+            existing.totalPrice += parseFloat(item.totalPrice);
+        } else {
+            mainItemsMap.set(key, {
+                name,
+                quantity: item.quantity,
+                totalPrice: parseFloat(item.totalPrice)
+            });
+        }
+    });
+
+    // 按類別收集配料
+    const categories = {
+        主餐: Array.from(mainItemsMap.values()).map(item => 
+            `${item.name}x${item.quantity}$${item.totalPrice}`
+        ),
+        炸物: new Map(),
+        飲料: new Map(),
+        醬料: new Map(),
+        加購: new Map(),
+        熟度: new Map(),
+        附餐: new Map()
+    };
+
+    order.items.forEach(item => {
+        // 炸物
+        if (item.selectedComponent) {
+            Object.entries(item.selectedComponent).forEach(([name, quantity]) => {
+                const current = categories.炸物.get(name) || 0;
+                categories.炸物.set(name, current + quantity);
+            });
+        }
+
+        // 飲料
+        if (item.selectedDrinks) {
+            Object.entries(item.selectedDrinks).forEach(([name, quantity]) => {
+                const current = categories.飲料.get(name) || 0;
+                categories.飲料.set(name, current + quantity);
+            });
+        }
+
+        // 醬料
+        if (item.selectedSauces) {
+            item.selectedSauces.forEach(sauce => {
+                const current = categories.醬料.get(sauce.name) || 0;
+                categories.醬料.set(sauce.name, current + sauce.quantity);
+            });
+        }
+
+        // 加購
+        if (item.selectedAddons) {
+            item.selectedAddons.forEach(addon => {
+                const name = addon.weight ? `${addon.name}${addon.weight}` : addon.name;
+                const current = categories.加購.get(name) || 0;
+                categories.加購.set(name, current + addon.quantity);
+            });
+        }
+
+        // 熟度
+        if (item.selectedDonenesses) {
+            Object.entries(item.selectedDonenesses).forEach(([name, quantity]) => {
+                const current = categories.熟度.get(name) || 0;
+                categories.熟度.set(name, current + quantity);
+            });
+        }
+
+        // 單點加購
+        if (item.selectedSingleChoiceAddon) {
+            const current = categories.加購.get(item.selectedSingleChoiceAddon) || 0;
+            categories.加購.set(item.selectedSingleChoiceAddon, current + item.quantity);
+        }
+    });
+
+    // 格式化每個類別
+    const formatCategory = (itemsMap: Map<string, number>, prefix: string = '') => {
+        if (itemsMap.size === 0) return '';
+        return Array.from(itemsMap.entries())
+            .map(([name, count]) => `${prefix}${name}x${count}`)
+            .join('.');
+    };
+
+    // 組合成單行文字
+    const parts = [
+        `單號:${finalOrderId}`,
+        categories.主餐.join('.'),
+        formatCategory(categories.炸物),
+        formatCategory(categories.飲料),
+        formatCategory(categories.醬料),
+        formatCategory(categories.加購),
+        formatCategory(categories.熟度),
+        `總金額:$${order.totalPrice}`
+    ].filter(part => part !== '');
+
+    return parts.join('.');
+};
+
+export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }) => {
+    if (!order) {
+        return null;
+    }
+    
+    const compactText = formatOrderByCategory(order, orderId);
+    
+    return (
+        <div className="bg-white text-black" style={{ 
+            width: '350px', 
+            margin: '0 auto', 
+            lineHeight: '1.2',
+            padding: '2px',
+            fontSize: '18px'
+        }}>
+            {/* 標頭 - 緊湊 */}
+            <div className="text-center" style={{ marginBottom: '2px' }}>
+                <div style={{ 
+                    fontSize: '20px', 
+                    fontWeight: 'bold',
+                    marginBottom: '1px'
+                }}>
+                    無名牛排
+                </div>
+                <div style={{ 
+                    fontSize: '18px', 
+                    fontWeight: 'bold',
+                    marginBottom: '2px'
+                }}>
+                    廚房工作單
+                </div>
+            </div>
+
+            {/* 單行訂單內容 - 無留白 */}
+            <div style={{
+                fontWeight: 'bold',
+                lineHeight: '1.1',
+                wordWrap: 'break-word',
+                fontSize: '16px',
+                padding: '0',
+                margin: '0'
+            }}>
+                {compactText}
+            </div>
+
+            {/* 頁尾 - 緊湊 */}
+            <div className="text-center" style={{ marginTop: '3px' }}>
+                <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
+                    感謝您的訂購！
+                </div>
+            </div>
+        </div>
+    );
+};
