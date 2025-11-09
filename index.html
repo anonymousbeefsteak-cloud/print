@@ -15,6 +15,16 @@
             -webkit-tap-highlight-color: transparent;
         }
         @media print {
+            @page {
+                size: 58mm auto; /* Specify page size for thermal printers */
+                margin: 0mm;
+            }
+            html, body {
+                width: 58mm;
+                margin: 0;
+                padding: 0;
+                background: white;
+            }
             body * {
                 visibility: hidden;
             }
@@ -33,7 +43,8 @@
                 color: #000 !important;
                 background-color: transparent !important;
                 box-shadow: none !important;
-                border-color: #ddd !important;
+                border: none !important;
+                text-shadow: none !important;
             }
             .no-print {
                 display: none !important;
