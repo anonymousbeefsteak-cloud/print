@@ -49,7 +49,7 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
             Array.from(map.entries()).map(([name, quantity]) => `${name} x${quantity}`).join(', ');
 
         const formatAddonsMap = (map: Map<string, { quantity: number; price: number }>) =>
-            Array.from(map.entries()).map(([name, data]) => `${name} x${data.quantity} ($${data.price * data.quantity})`).join(', ');
+            Array.from(map.entries()).map(([name, data]) => `${name} x${data.quantity}(${data.price * data.quantity})`).join(', ');
 
         return {
             sauces: formatMap(sauces),
@@ -106,25 +106,28 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
         const lineTotalPrice = item.item.price * quantity;
         const doneness = formatDoneness(item);
 
+        let mainPart;
+        if (item.item.customizations.doneness) {
+            mainPart = `${name} x ${quantity} ($${lineTotalPrice})`;
+        } else {
+            mainPart = `${name}(${item.item.price}) x${quantity}(${lineTotalPrice})`;
+        }
+
         return (
             <p key={item.cartId} style={{ margin: 0, padding: '0.25mm 0' }}>
-                {name} x {quantity} (${lineTotalPrice})
+                {mainPart}
                 {doneness && ` / ${doneness}`}
             </p>
         );
     });
 
     return (
-        <div style={{ width: '58mm', padding: '1mm', backgroundColor: 'white', color: 'black', fontFamily: 'monospace', fontSize: '8pt', lineHeight: 1.2 }}>
+        <div style={{ width: '58mm', padding: '1mm', backgroundColor: 'white', color: 'black', fontFamily: 'monospace', fontSize: '28px', lineHeight: 1.2 }}>
             <p style={{ margin: 0, fontWeight: 'bold' }}>
                 訂單號: {finalOrderId?.slice(-6) || 'xxx'} 類型: {orderTypeString} 共計 ${order.totalPrice}
             </p>
             
-            <div style={{ borderTop: '1px dotted black', height: 0, margin: '1mm 0' }}></div>
-            
             <div>{mainMealLines}</div>
-
-            <div style={{ borderTop: '1px dotted black', height: 0, margin: '1mm 0' }}></div>
 
             {aggregated.sauces && <p style={{ margin: 0 }}>{aggregated.sauces}</p>}
             {aggregated.drinks && <p style={{ margin: 0 }}>{aggregated.drinks}</p>}
