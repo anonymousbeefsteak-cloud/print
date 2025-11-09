@@ -11,102 +11,124 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
         return null;
     }
 
+    // Aggregates sauces, drinks, and addons from the entire order
     const aggregated = useMemo(() => {
-        const mainMeals = new Map<string, { quantity: number; totalPrice: number; }>();
-        const doneness = new Map<string, number>();
-        const drinks = new Map<string, number>();
         const sauces = new Map<string, number>();
-        const addons = new Map<string, number>();
-        const notes: string[] = [];
+        const drinks = new Map<string, number>();
+        const addons = new Map<string, { quantity: number; price: number }>();
 
         const addToMap = (map: Map<string, number>, key: string, value: number) => {
             if (key && value > 0) map.set(key, (map.get(key) || 0) + value);
         };
 
-        for (const item of order.items) {
-            const mealName = item.item.name.replace(/半全餐|半套餐/g, '套餐');
-            const meal = mainMeals.get(mealName);
-            if (meal) {
-                meal.quantity += item.quantity;
-            } else {
-                mainMeals.set(mealName, {
-                    quantity: item.quantity,
-                    totalPrice: 0,
-                });
+        const addToAddonsMap = (name: string, quantity: number, price: number) => {
+            if (name && quantity > 0) {
+                const existing = addons.get(name);
+                if (existing) {
+                    existing.quantity += quantity;
+                } else {
+                    // Price is per-unit price
+                    addons.set(name, { quantity, price });
+                }
             }
+        };
 
-            if (item.selectedDonenesses) Object.entries(item.selectedDonenesses).forEach(([k, v]) => addToMap(doneness, k, Number(v) || 0));
-            if (item.selectedDrinks) Object.entries(item.selectedDrinks).forEach(([k, v]) => addToMap(drinks, k, Number(v) || 0));
-            if (item.selectedSauces) item.selectedSauces.forEach(s => addToMap(sauces, s.name, s.quantity));
-            
-            if (item.selectedAddons) item.selectedAddons.forEach(a => addToMap(addons, a.name, a.quantity));
-            if (item.selectedComponent) Object.entries(item.selectedComponent).forEach(([k, v]) => addToMap(addons, k, Number(v) || 0));
-            if (item.selectedSideChoices) Object.entries(item.selectedSideChoices).forEach(([k, v]) => addToMap(addons, k, Number(v) || 0));
-            if (item.selectedMultiChoice) Object.entries(item.selectedMultiChoice).forEach(([k, v]) => addToMap(addons, k, Number(v) || 0));
-            if (item.selectedDesserts) item.selectedDesserts.forEach(d => addToMap(addons, d.name, d.quantity));
-            if (item.selectedPastas) item.selectedPastas.forEach(p => addToMap(addons, p.name, p.quantity));
-            if (item.selectedSingleChoiceAddon) addToMap(addons, item.selectedSingleChoiceAddon, item.quantity);
-
-            if(item.selectedNotes) notes.push(`${mealName}: ${item.selectedNotes}`);
+        for (const item of order.items) {
+            if (item.selectedSauces) {
+                item.selectedSauces.forEach(s => addToMap(sauces, s.name, s.quantity));
+            }
+            if (item.selectedDrinks) {
+                Object.entries(item.selectedDrinks).forEach(([k, v]) => addToMap(drinks, k, Number(v) || 0));
+            }
+            if (item.selectedAddons) {
+                item.selectedAddons.forEach(a => addToAddonsMap(a.name, a.quantity, a.price));
+            }
         }
 
-        mainMeals.forEach((value, key) => {
-            const itemsForThisMeal = order.items.filter(i => i.item.name.replace(/半全餐|半套餐/g, '套餐') === key);
-            value.totalPrice = itemsForThisMeal.reduce((acc, i) => acc + i.totalPrice, 0);
-        });
+        const formatMap = (map: Map<string, number>) =>
+            Array.from(map.entries()).map(([name, quantity]) => `${name} x${quantity}`).join(', ');
 
-        return { mainMeals, doneness, drinks, sauces, addons, notes };
-    }, [order]);
+        const formatAddonsMap = (map: Map<string, { quantity: number; price: number }>) =>
+            Array.from(map.entries()).map(([name, data]) => `${name} x${data.quantity} ($${data.price * data.quantity})`).join(', ');
 
-    const finalOrderId = 'id' in order ? order.id : orderId;
+        return {
+            sauces: formatMap(sauces),
+            drinks: formatMap(drinks),
+            addons: formatAddonsMap(addons),
+        };
+    }, [order.items]);
 
-    const renderSummarySection = (title: string, data: Map<string, number>) => {
-        if (data.size === 0) return null;
-        return (
-            <div style={{ marginTop: '0.5mm' }}>
-                <p style={{ margin: 0, fontWeight: 'bold' }}>{title}:</p>
-                {Array.from(data.entries()).map(([name, quantity]) => (
-                    <p key={name} style={{ margin: 0 }}>
-                        - {name} x{quantity}
-                    </p>
-                ))}
-            </div>
-        );
+    // Generates the descriptive name for a cart item
+    const getItemDisplayName = (item: CartItem): string => {
+        let name = item.item.name.replace(/半全餐|半套餐/g, '套餐');
+
+        if (item.selectedComponent && Object.keys(item.selectedComponent).length > 0) {
+            const componentChoice = Object.keys(item.selectedComponent)[0];
+            name = name.replace(/\(.*\)/, `+${componentChoice}`);
+        }
+        
+        if (item.selectedPastas && item.selectedPastas.length > 0) {
+            const pastaMain = item.selectedPastas.find(p => p.name.includes('天使義麵'));
+            const pastaSauce = item.selectedPastas.find(p => p.name.includes('索士'));
+            if (pastaMain && pastaSauce) {
+                name = `(${pastaSauce.name.replace('索士','')})${pastaMain.name.replace('天使義麵','')}義麵`;
+            }
+        }
+        
+        if (item.selectedDesserts && item.selectedDesserts.length > 0) {
+            name = item.selectedDesserts.map(d => d.name).join(' + ');
+        }
+        
+        if (item.selectedMultiChoice && Object.keys(item.selectedMultiChoice).length > 0) {
+            const flavor = Object.keys(item.selectedMultiChoice)[0];
+             name = `(${flavor})${name}`;
+        }
+
+        return name;
     };
 
+    // Formats the doneness string for an item
+    const formatDoneness = (item: CartItem): string | null => {
+        if (item.selectedDonenesses && Object.keys(item.selectedDonenesses).length > 0) {
+            return Object.entries(item.selectedDonenesses)
+                .map(([d, q]) => `${d.replace('分熟', '分')}x${q}`)
+                .join('. ');
+        }
+        return null;
+    };
+
+    const finalOrderId = 'id' in order ? order.id : orderId;
+    const orderTypeString = order.orderType;
+
+    const mainMealLines = order.items.map(item => {
+        const name = getItemDisplayName(item);
+        const quantity = item.quantity;
+        const lineTotalPrice = item.item.price * quantity;
+        const doneness = formatDoneness(item);
+
+        return (
+            <p key={item.cartId} style={{ margin: 0, padding: '0.25mm 0' }}>
+                {name} x {quantity} (${lineTotalPrice})
+                {doneness && ` / ${doneness}`}
+            </p>
+        );
+    });
+
     return (
-        <div style={{ width: '58mm', padding: 0, backgroundColor: 'white', color: 'black', fontFamily: 'monospace', fontSize: '8pt', lineHeight: 1.15 }}>
-            <div style={{ fontWeight: 'bold', fontSize: '9pt', paddingBottom: '0.5mm' }}>
-                <p style={{ margin: 0 }}>單號: {finalOrderId?.slice(-6)} 餐點內容 -</p>
-                <p style={{ margin: 0 }}>餐點總計: ${order.totalPrice}</p>
-            </div>
+        <div style={{ width: '58mm', padding: '1mm', backgroundColor: 'white', color: 'black', fontFamily: 'monospace', fontSize: '8pt', lineHeight: 1.2 }}>
+            <p style={{ margin: 0, fontWeight: 'bold' }}>
+                訂單號: {finalOrderId?.slice(-6) || 'xxx'} 類型: {orderTypeString} 共計 ${order.totalPrice}
+            </p>
+            
+            <div style={{ borderTop: '1px dotted black', height: 0, margin: '1mm 0' }}></div>
+            
+            <div>{mainMealLines}</div>
 
-            <div style={{ borderTop: '1px dotted black', height: 0, margin: '0.5mm 0' }}></div>
+            <div style={{ borderTop: '1px dotted black', height: 0, margin: '1mm 0' }}></div>
 
-            <div style={{ margin: '0.5mm 0' }}>
-                {Array.from(aggregated.mainMeals.entries()).map(([name, data]) => (
-                     <div key={name} style={{ margin: '0.2mm 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <span style={{ paddingRight: '1mm', wordBreak: 'break-all' }}>{name} x{data.quantity}</span>
-                        <span style={{ whiteSpace: 'nowrap' }}>(${data.totalPrice})</span>
-                     </div>
-                ))}
-            </div>
-            
-            <div style={{ margin: '1mm 0', textAlign: 'center', borderTop: '1px dotted black', paddingTop: '0.5mm' }}>- 總計列表 -</div>
-            
-            {renderSummarySection('熟度總計', aggregated.doneness)}
-            {renderSummarySection('飲料總計', aggregated.drinks)}
-            {renderSummarySection('醬料總計', aggregated.sauces)}
-            {renderSummarySection('加購總計', aggregated.addons)}
-            
-            {aggregated.notes.length > 0 && (
-                <div style={{ marginTop: '0.5mm', borderTop: '1px dotted black', paddingTop: '0.5mm' }}>
-                    <p style={{ margin: 0, fontWeight: 'bold' }}>備註總計:</p>
-                    {aggregated.notes.map((note, i) => (
-                        <p key={i} style={{ margin: 0 }}>- {note}</p>
-                    ))}
-                </div>
-            )}
+            {aggregated.sauces && <p style={{ margin: 0 }}>{aggregated.sauces}</p>}
+            {aggregated.drinks && <p style={{ margin: 0 }}>{aggregated.drinks}</p>}
+            {aggregated.addons && <p style={{ margin: 0 }}>{aggregated.addons}</p>}
         </div>
     );
 };
