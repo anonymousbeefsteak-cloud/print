@@ -116,7 +116,7 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
     const finalOrderId = 'id' in order ? order.id : orderId;
     
     const pStyle = { margin: 0, whiteSpace: 'normal', wordBreak: 'break-word' as const };
-    const separatorStyle = { border: 'none', borderTop: '1px dashed black', margin: '2px 0' };
+    const separatorStyle = { border: 'none', borderTop: '1px dashed black', margin: '1px 0' };
 
     const mainMealLines = aggregated.meals.map((meal, index) => {
         const donenessStr = Array.from(meal.donenesses.entries())
@@ -132,7 +132,7 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
     });
 
     return (
-        <div style={{ width: '58mm', padding: '0', backgroundColor: 'white', color: 'black', fontFamily: 'monospace', fontSize: '28px', lineHeight: 1.2 }}>
+        <div style={{ width: '58mm', padding: '0', backgroundColor: 'white', color: 'black', fontFamily: 'monospace', fontSize: '28px', lineHeight: 1.1 }}>
             <p style={pStyle}>
                 單號: {finalOrderId?.slice(-6) || 'xxx'} 類型: {order.orderType} 共計${order.totalPrice}
             </p>
@@ -140,9 +140,20 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
             
             {mainMealLines.length > 0 && <div>{mainMealLines}</div>}
             
-            {aggregated.addons && <><hr style={separatorStyle} /><p style={pStyle}>{aggregated.addons}</p></>}
-            {aggregated.sauces && <><hr style={separatorStyle} /><p style={pStyle}>{aggregated.sauces}</p></>}
-            {aggregated.drinks && <><hr style={separatorStyle} /><p style={pStyle}>{aggregated.drinks}</p></>}
+            {aggregated.addons && (
+                <>
+                    <hr style={separatorStyle} />
+                    <p style={pStyle}>{aggregated.addons}</p>
+                </>
+            )}
+
+            {(aggregated.sauces || aggregated.drinks) && (
+                <>
+                    <hr style={separatorStyle} />
+                    {aggregated.sauces && <p style={pStyle}>{aggregated.sauces}</p>}
+                    {aggregated.drinks && <p style={pStyle}>{aggregated.drinks}</p>}
+                </>
+            )}
         </div>
     );
 };
