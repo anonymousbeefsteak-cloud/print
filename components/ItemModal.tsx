@@ -83,7 +83,8 @@ const ItemModal: React.FC<ItemModalProps> = ({ selectedItem, editingItem, addons
     setter(prev => {
       const currentCount = prev[name] || 0;
       const newCount = Math.max(0, currentCount + change);
-      const totalCount = Object.values({ ...prev, [name]: newCount }).reduce((a, b) => a + b, 0);
+      // FIX: Add explicit types to reduce function to resolve 'unknown' type errors.
+      const totalCount = Object.values({ ...prev, [name]: newCount }).reduce((a: number, b: number) => a + b, 0);
       if (totalCount > limit) return prev;
       const newObject = { ...prev, [name]: newCount };
       if (newCount === 0) delete newObject[name];
@@ -137,14 +138,19 @@ const ItemModal: React.FC<ItemModalProps> = ({ selectedItem, editingItem, addons
   }, [item.price, quantity, selectedAddons, selectedSingleChoiceAddon, custom.singleChoiceAddon]);
 
   // Counts for UI display
-  const donenessCount = useMemo(() => Object.values(selectedDonenesses).reduce((a, b) => a + (b || 0), 0), [selectedDonenesses]);
+  // FIX: Add explicit types to reduce function to resolve 'unknown' type errors.
+  const donenessCount = useMemo(() => Object.values(selectedDonenesses).reduce((a: number, b: number | undefined) => a + (b || 0), 0), [selectedDonenesses]);
   const sauceLimit = useMemo(() => (custom.saucesPerItem ? custom.saucesPerItem * quantity : quantity), [custom.saucesPerItem, quantity]);
   const sauceCount = useMemo(() => selectedSauces.reduce((sum, s) => sum + s.quantity, 0), [selectedSauces]);
-  const drinkCount = useMemo(() => Object.values(selectedDrinks).reduce((a, b) => a + (b || 0), 0), [selectedDrinks]);
-  const componentCount = useMemo(() => Object.values(selectedComponent).reduce((a, b) => a + (b || 0), 0), [selectedComponent]);
+  // FIX: Add explicit types to reduce function to resolve 'unknown' type errors.
+  const drinkCount = useMemo(() => Object.values(selectedDrinks).reduce((a: number, b: number) => a + (b || 0), 0), [selectedDrinks]);
+  // FIX: Add explicit types to reduce function to resolve 'unknown' type errors.
+  const componentCount = useMemo(() => Object.values(selectedComponent).reduce((a: number, b: number) => a + (b || 0), 0), [selectedComponent]);
   const sideChoiceLimit = useMemo(() => (custom.sideChoice ? custom.sideChoice.choices * quantity : 0), [custom.sideChoice, quantity]);
-  const sideChoiceCount = useMemo(() => Object.values(selectedSideChoices).reduce((a, b) => a + (b || 0), 0), [selectedSideChoices]);
-  const multiChoiceCount = useMemo(() => Object.values(selectedMultiChoice).reduce((a, b) => a + (b || 0), 0), [selectedMultiChoice]);
+  // FIX: Add explicit types to reduce function to resolve 'unknown' type errors.
+  const sideChoiceCount = useMemo(() => Object.values(selectedSideChoices).reduce((a: number, b: number) => a + (b || 0), 0), [selectedSideChoices]);
+  // FIX: Add explicit types to reduce function to resolve 'unknown' type errors.
+  const multiChoiceCount = useMemo(() => Object.values(selectedMultiChoice).reduce((a: number, b: number) => a + (b || 0), 0), [selectedMultiChoice]);
 
   const dessertACount = useMemo(() => {
       if (!custom.dessertChoice) return 0;
