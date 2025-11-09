@@ -58,7 +58,8 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ isOpen, onAva
       const optionsAvail = Object.fromEntries(
           Object.entries(options).map(([key, val]) => [
               key,
-              Object.fromEntries(val.map(opt => [opt.name, opt.isAvailable]))
+              // FIX: Cast `val` to any[] to resolve 'unknown' type error on .map()
+              Object.fromEntries((val as any[]).map(opt => [opt.name, opt.isAvailable]))
           ])
       );
       
@@ -81,7 +82,7 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ isOpen, onAva
       const optionsAvail = initialOptions ? Object.fromEntries(
           Object.entries(initialOptions).map(([key, val]) => [
               key,
-              Object.fromEntries(val.map(opt => [opt.name, opt.isAvailable]))
+              Object.fromEntries((val as any[]).map(opt => [opt.name, opt.isAvailable]))
           ])
       ) : {};
       return { menu: menuAvail, addons: addonAvail, options: optionsAvail };
@@ -188,11 +189,12 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ isOpen, onAva
       ))}
       
       {initialOptions && optionSections.map(section => (
-        (initialOptions[section.key] && initialOptions[section.key].length > 0) && (
+        (initialOptions[section.key] && (initialOptions[section.key] as any[]).length > 0) && (
             <div key={section.key} className="bg-white p-4 rounded-lg shadow-sm">
                 <h3 className="text-lg font-bold text-slate-700 border-b pb-2 mb-4">{section.title}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {initialOptions[section.key].map(option => (
+                    {/* FIX: Cast to any[] to resolve 'unknown' type error on .map() */}
+                    {(initialOptions[section.key] as any[]).map(option => (
                         <div key={option.name} className="flex justify-between items-center bg-slate-50 p-3 rounded-md">
                             <span className="text-sm font-medium text-slate-800">{option.name}</span>
                             <ToggleSwitch
