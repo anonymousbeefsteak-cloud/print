@@ -31,7 +31,7 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
             } else {
                 mainMeals.set(mealName, {
                     quantity: item.quantity,
-                    totalPrice: 0, // Will be calculated later
+                    totalPrice: 0,
                 });
             }
 
@@ -39,7 +39,6 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
             if (item.selectedDrinks) Object.entries(item.selectedDrinks).forEach(([k, v]) => addToMap(drinks, k, Number(v) || 0));
             if (item.selectedSauces) item.selectedSauces.forEach(s => addToMap(sauces, s.name, s.quantity));
             
-            // Group all other things into addons for the summary
             if (item.selectedAddons) item.selectedAddons.forEach(a => addToMap(addons, a.name, a.quantity));
             if (item.selectedComponent) Object.entries(item.selectedComponent).forEach(([k, v]) => addToMap(addons, k, Number(v) || 0));
             if (item.selectedSideChoices) Object.entries(item.selectedSideChoices).forEach(([k, v]) => addToMap(addons, k, Number(v) || 0));
@@ -64,10 +63,10 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
     const renderSummarySection = (title: string, data: Map<string, number>) => {
         if (data.size === 0) return null;
         return (
-            <div style={{ marginTop: '1mm' }}>
+            <div style={{ marginTop: '0.5mm' }}>
                 <p style={{ margin: 0, fontWeight: 'bold' }}>{title}:</p>
                 {Array.from(data.entries()).map(([name, quantity]) => (
-                    <p key={name} style={{ margin: 0, paddingLeft: '1mm' }}>
+                    <p key={name} style={{ margin: 0 }}>
                         - {name} x{quantity}
                     </p>
                 ))}
@@ -76,23 +75,24 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
     };
 
     return (
-        <div style={{ width: '58mm', padding: '1mm', backgroundColor: 'white', color: 'black', fontFamily: 'monospace', fontSize: '9pt', lineHeight: 1.1 }}>
-            <div style={{ fontWeight: 'bold', fontSize: '10pt' }}>
+        <div style={{ width: '58mm', padding: 0, backgroundColor: 'white', color: 'black', fontFamily: 'monospace', fontSize: '8pt', lineHeight: 1.15 }}>
+            <div style={{ fontWeight: 'bold', fontSize: '9pt', paddingBottom: '0.5mm' }}>
                 <p style={{ margin: 0 }}>單號: {finalOrderId?.slice(-6)} 餐點內容 -</p>
                 <p style={{ margin: 0 }}>餐點總計: ${order.totalPrice}</p>
             </div>
 
-            <div style={{ margin: '1mm 0', borderTop: '1px dotted black', height: 0 }}></div>
+            <div style={{ borderTop: '1px dotted black', height: 0, margin: '0.5mm 0' }}></div>
 
-            <div style={{ margin: '1mm 0' }}>
+            <div style={{ margin: '0.5mm 0' }}>
                 {Array.from(aggregated.mainMeals.entries()).map(([name, data]) => (
-                    <p key={name} style={{ margin: '0.5mm 0' }}>
-                        {name} x{data.quantity} (${data.totalPrice})
-                    </p>
+                     <div key={name} style={{ margin: '0.2mm 0', overflow: 'hidden' }}>
+                        <span>{name} x{data.quantity}</span>
+                        <span style={{ float: 'right' }}>(${data.totalPrice})</span>
+                     </div>
                 ))}
             </div>
             
-            <div style={{ margin: '1mm 0', textAlign: 'center' }}>- 總計列表 -</div>
+            <div style={{ margin: '1mm 0', textAlign: 'center', borderTop: '1px dotted black', paddingTop: '0.5mm' }}>- 總計列表 -</div>
             
             {renderSummarySection('熟度總計', aggregated.doneness)}
             {renderSummarySection('飲料總計', aggregated.drinks)}
@@ -100,10 +100,10 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
             {renderSummarySection('加購總計', aggregated.addons)}
             
             {aggregated.notes.length > 0 && (
-                <div style={{ marginTop: '1mm' }}>
+                <div style={{ marginTop: '0.5mm', borderTop: '1px dotted black', paddingTop: '0.5mm' }}>
                     <p style={{ margin: 0, fontWeight: 'bold' }}>備註總計:</p>
                     {aggregated.notes.map((note, i) => (
-                        <p key={i} style={{ margin: 0, paddingLeft: '1mm' }}>- {note}</p>
+                        <p key={i} style={{ margin: 0 }}>- {note}</p>
                     ))}
                 </div>
             )}
