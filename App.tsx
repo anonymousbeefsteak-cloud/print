@@ -10,6 +10,7 @@ import { AdminDashboard } from './components/AdminDashboard';
 import WelcomeModal from './components/WelcomeModal';
 import AIAssistantModal from './components/AIAssistantModal';
 import { CartIcon, RefreshIcon, SearchIcon, SparklesIcon } from './components/icons';
+import { PrintableOrder } from './components/PrintableOrder';
 
 const App: React.FC = () => {
     const [cart, setCart] = useState<CartItem[]>([]);
@@ -23,6 +24,7 @@ const App: React.FC = () => {
     const [clearCartAfterPrint, setClearCartAfterPrint] = useState<boolean>(false);
     const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
     const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [menuData, setMenuData] = useState<MenuCategory[]>([]);
     const [addons, setAddons] = useState<Addon[]>([]);
@@ -231,6 +233,26 @@ const App: React.FC = () => {
     
     const cartItemCount = useMemo(() => cart.reduce((total, item) => total + item.quantity, 0), [cart]);
 
+    const handleSubmitAndPrint = async (orderData: OrderData) => {
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+        setNotification(null);
+        try {
+            const result = await apiService.submitOrder(orderData);
+            if (result.success && result.orderId) {
+                handlePrintRequest(<PrintableOrder order={orderData} orderId={result.orderId} />, true);
+            } else {
+                setNotification(`訂單提交失敗: ${result.message || '未知錯誤'}`);
+                setTimeout(() => setNotification(null), 5000);
+            }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : '請檢查網路連線';
+            setNotification(`訂單提交時發生錯誤: ${errorMessage}`);
+            setTimeout(() => setNotification(null), 5000);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -311,7 +333,8 @@ const App: React.FC = () => {
                     onUpdateQuantity={handleUpdateQuantity}
                     onRemoveItem={handleRemoveFromCart}
                     onEditItem={handleEditItem}
-                    onPrintRequest={(content) => handlePrintRequest(content, true)}
+                    onSubmitAndPrint={handleSubmitAndPrint}
+                    isSubmitting={isSubmitting}
                 />
 
                 {selectedItem && (
