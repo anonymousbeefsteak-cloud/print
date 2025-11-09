@@ -12,129 +12,101 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
     }
 
     const aggregated = useMemo(() => {
-        const details = {
-            doneness: new Map<string, number>(),
-            components: new Map<string, number>(),
-            sideChoices: new Map<string, number>(),
-            multiChoice: new Map<string, number>(),
-            drinks: new Map<string, number>(),
-            sauces: new Map<string, number>(),
-            desserts: new Map<string, number>(),
-            pastas: new Map<string, number>(),
-            singleChoiceAddon: new Map<string, number>(),
-            addons: new Map<string, number>(),
-            notes: [] as string[],
-        };
+        const mainMeals = new Map<string, { quantity: number; totalPrice: number; }>();
+        const doneness = new Map<string, number>();
+        const drinks = new Map<string, number>();
+        const sauces = new Map<string, number>();
+        const addons = new Map<string, number>();
+        const notes: string[] = [];
 
         const addToMap = (map: Map<string, number>, key: string, value: number) => {
-            if (value > 0) map.set(key, (map.get(key) || 0) + value);
+            if (key && value > 0) map.set(key, (map.get(key) || 0) + value);
         };
 
         for (const item of order.items) {
-            // FIX: Explicitly cast `v` to Number to handle potential `undefined` values and resolve type errors.
-            if (item.selectedDonenesses) Object.entries(item.selectedDonenesses).forEach(([k, v]) => addToMap(details.doneness, k, Number(v)));
-            // FIX: Explicitly cast `v` to Number to handle potential `undefined` values and resolve type errors.
-            if (item.selectedComponent) Object.entries(item.selectedComponent).forEach(([k, v]) => addToMap(details.components, k, Number(v)));
-            // FIX: Explicitly cast `v` to Number to handle potential `undefined` values and resolve type errors.
-            if (item.selectedSideChoices) Object.entries(item.selectedSideChoices).forEach(([k, v]) => addToMap(details.sideChoices, k, Number(v)));
-            // FIX: Explicitly cast `v` to Number to handle potential `undefined` values and resolve type errors.
-            if (item.selectedMultiChoice) Object.entries(item.selectedMultiChoice).forEach(([k, v]) => addToMap(details.multiChoice, k, Number(v)));
-            // FIX: Explicitly cast `v` to Number to handle potential `undefined` values and resolve type errors.
-            if (item.selectedDrinks) Object.entries(item.selectedDrinks).forEach(([k, v]) => addToMap(details.drinks, k, Number(v)));
-            if (item.selectedSauces) item.selectedSauces.forEach(s => addToMap(details.sauces, s.name, s.quantity));
-            if (item.selectedDesserts) item.selectedDesserts.forEach(d => addToMap(details.desserts, d.name, d.quantity));
-            if (item.selectedPastas) item.selectedPastas.forEach(p => addToMap(details.pastas, p.name, p.quantity));
-            if (item.selectedAddons) item.selectedAddons.forEach(a => addToMap(details.addons, a.name, a.quantity));
-            if (item.selectedSingleChoiceAddon) addToMap(details.singleChoiceAddon, item.selectedSingleChoiceAddon, item.quantity);
-            if (item.selectedNotes) details.notes.push(item.selectedNotes);
+            const mealName = item.item.name.replace(/半全餐|半套餐/g, '套餐');
+            const meal = mainMeals.get(mealName);
+            if (meal) {
+                meal.quantity += item.quantity;
+            } else {
+                mainMeals.set(mealName, {
+                    quantity: item.quantity,
+                    totalPrice: 0, // Will be calculated later
+                });
+            }
+
+            if (item.selectedDonenesses) Object.entries(item.selectedDonenesses).forEach(([k, v]) => addToMap(doneness, k, Number(v) || 0));
+            if (item.selectedDrinks) Object.entries(item.selectedDrinks).forEach(([k, v]) => addToMap(drinks, k, Number(v) || 0));
+            if (item.selectedSauces) item.selectedSauces.forEach(s => addToMap(sauces, s.name, s.quantity));
+            
+            // Group all other things into addons for the summary
+            if (item.selectedAddons) item.selectedAddons.forEach(a => addToMap(addons, a.name, a.quantity));
+            if (item.selectedComponent) Object.entries(item.selectedComponent).forEach(([k, v]) => addToMap(addons, k, Number(v) || 0));
+            if (item.selectedSideChoices) Object.entries(item.selectedSideChoices).forEach(([k, v]) => addToMap(addons, k, Number(v) || 0));
+            if (item.selectedMultiChoice) Object.entries(item.selectedMultiChoice).forEach(([k, v]) => addToMap(addons, k, Number(v) || 0));
+            if (item.selectedDesserts) item.selectedDesserts.forEach(d => addToMap(addons, d.name, d.quantity));
+            if (item.selectedPastas) item.selectedPastas.forEach(p => addToMap(addons, p.name, p.quantity));
+            if (item.selectedSingleChoiceAddon) addToMap(addons, item.selectedSingleChoiceAddon, item.quantity);
+
+            if(item.selectedNotes) notes.push(`${mealName}: ${item.selectedNotes}`);
         }
 
-        const mapToString = (map: Map<string, number>) => {
-            if (map.size === 0) return null;
-            return Array.from(map.entries()).map(([key, value]) => `${key}x${value}`).join(', ');
-        };
+        mainMeals.forEach((value, key) => {
+            const itemsForThisMeal = order.items.filter(i => i.item.name.replace(/半全餐|半套餐/g, '套餐') === key);
+            value.totalPrice = itemsForThisMeal.reduce((acc, i) => acc + i.totalPrice, 0);
+        });
 
-        return {
-            doneness: mapToString(details.doneness),
-            components: mapToString(details.components),
-            sideChoices: mapToString(details.sideChoices),
-            multiChoice: mapToString(details.multiChoice),
-            drinks: mapToString(details.drinks),
-            sauces: mapToString(details.sauces),
-            desserts: mapToString(details.desserts),
-            pastas: mapToString(details.pastas),
-            singleChoiceAddon: mapToString(details.singleChoiceAddon),
-            addons: mapToString(details.addons),
-            notes: details.notes.length > 0 ? details.notes : null,
-        };
-    }, [order.items]);
+        return { mainMeals, doneness, drinks, sauces, addons, notes };
+    }, [order]);
 
     const finalOrderId = 'id' in order ? order.id : orderId;
-    const createdAt = 'createdAt' in order ? new Date(order.createdAt) : new Date();
 
-    const detailSections: { label: string; value: string | string[] | null }[] = [
-        { label: '熟度', value: aggregated.doneness },
-        { label: '炸物', value: aggregated.components },
-        { label: '附餐', value: aggregated.sideChoices },
-        { label: '飲料', value: aggregated.drinks },
-        { label: '醬料', value: aggregated.sauces },
-        { label: '口味', value: aggregated.multiChoice },
-        { label: '義麵', value: aggregated.pastas },
-        { label: '甜品', value: aggregated.desserts },
-        { label: '單點', value: aggregated.singleChoiceAddon },
-        { label: '加購', value: aggregated.addons },
-        { label: '備註', value: aggregated.notes },
-    ];
-    
+    const renderSummarySection = (title: string, data: Map<string, number>) => {
+        if (data.size === 0) return null;
+        return (
+            <div style={{ marginTop: '1mm' }}>
+                <p style={{ margin: 0, fontWeight: 'bold' }}>{title}:</p>
+                {Array.from(data.entries()).map(([name, quantity]) => (
+                    <p key={name} style={{ margin: 0, paddingLeft: '1mm' }}>
+                        - {name} x{quantity}
+                    </p>
+                ))}
+            </div>
+        );
+    };
+
     return (
-        <div style={{ width: '72mm', padding: '1mm', backgroundColor: 'white', color: 'black', fontFamily: 'monospace', fontSize: '9pt', lineHeight: 1.2 }}>
-            <h3 style={{ fontSize: '12pt', fontWeight: 'bold', textAlign: 'center', margin: '0 0 1mm 0' }}>無名牛排</h3>
-            <div style={{ fontSize: '8pt', margin: 0 }}>
-                <p style={{ margin: 0 }}>顧客: {order.customerInfo.name} ({order.customerInfo.phone})</p>
-                <p style={{ margin: 0 }}>類型: {order.orderType} {order.customerInfo.tableNumber && `(${order.customerInfo.tableNumber}桌)`}</p>
-                <p style={{ margin: 0 }}>時間: {createdAt.toLocaleString('zh-TW', { hour12: false })}</p>
+        <div style={{ width: '58mm', padding: '1mm', backgroundColor: 'white', color: 'black', fontFamily: 'monospace', fontSize: '9pt', lineHeight: 1.1 }}>
+            <div style={{ fontWeight: 'bold', fontSize: '10pt' }}>
+                <p style={{ margin: 0 }}>單號: {finalOrderId?.slice(-6)} 餐點內容 -</p>
+                <p style={{ margin: 0 }}>餐點總計: ${order.totalPrice}</p>
             </div>
-            
-            <hr style={{ border: 'none', borderTop: '1px dashed black', margin: '1mm 0' }} />
-            
-            {/* Section 1: Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '10pt', margin: 0 }}>
-                <span>單號: {finalOrderId?.slice(-6)}</span>
-                <span>總計: ${order.totalPrice}</span>
-            </div>
-            
-            <hr style={{ border: 'none', borderTop: '1px dashed black', margin: '1mm 0' }} />
 
-            {/* Section 2: Main Courses */}
-            <div style={{ margin: '0' }}>
-                {order.items.map(item => (
-                    <p key={item.cartId} style={{ margin: 0 }}>
-                        {item.item.name} x{item.quantity}
+            <div style={{ margin: '1mm 0', borderTop: '1px dotted black', height: 0 }}></div>
+
+            <div style={{ margin: '1mm 0' }}>
+                {Array.from(aggregated.mainMeals.entries()).map(([name, data]) => (
+                    <p key={name} style={{ margin: '0.5mm 0' }}>
+                        {name} x{data.quantity} (${data.totalPrice})
                     </p>
                 ))}
             </div>
             
-            <hr style={{ border: 'none', borderTop: '1px dashed black', margin: '1mm 0' }} />
-
-            {/* Section 3: Details */}
-            <div style={{ margin: '0', fontSize: '8pt' }}>
-                {detailSections.map(({ label, value }) => {
-                    if (!value) return null;
-                    if (Array.isArray(value)) {
-                         return (
-                            <div key={label} style={{ margin: 0 }}>
-                                <p style={{ margin: 0, fontWeight: 'bold' }}>{label}:</p>
-                                {value.map((note, i) => <p key={i} style={{ margin: 0, paddingLeft: '2mm' }}>- {note}</p>)}
-                            </div>
-                        );
-                    }
-                    return (
-                        <p key={label} style={{ margin: 0 }}>
-                            <strong style={{ minWidth: '12mm', display: 'inline-block' }}>{label}:</strong> {value}
-                        </p>
-                    );
-                })}
-            </div>
+            <div style={{ margin: '1mm 0', textAlign: 'center' }}>- 總計列表 -</div>
+            
+            {renderSummarySection('熟度總計', aggregated.doneness)}
+            {renderSummarySection('飲料總計', aggregated.drinks)}
+            {renderSummarySection('醬料總計', aggregated.sauces)}
+            {renderSummarySection('加購總計', aggregated.addons)}
+            
+            {aggregated.notes.length > 0 && (
+                <div style={{ marginTop: '1mm' }}>
+                    <p style={{ margin: 0, fontWeight: 'bold' }}>備註總計:</p>
+                    {aggregated.notes.map((note, i) => (
+                        <p key={i} style={{ margin: 0, paddingLeft: '1mm' }}>- {note}</p>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
