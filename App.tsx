@@ -58,9 +58,7 @@ const App: React.FC = () => {
             const handleAfterPrint = () => {
                 setPrintContent(null);
                  if (clearCartAfterPrint) {
-                    setCart([]);
-                    setIsCartOpen(false);
-                    setClearCartAfterPrint(false); // Reset
+                    window.location.reload();
                 }
             };
 
