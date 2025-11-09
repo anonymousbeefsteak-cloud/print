@@ -13,13 +13,14 @@ interface CartMainViewProps {
     onInfoChange: (field: keyof CustomerInfo, value: string) => void;
     totalPrice: number;
     handleCheckout: () => void;
+    isSubmitting: boolean;
     orderType: OrderType;
     setOrderType: (type: OrderType) => void;
     validationError: string | null;
     setValidationError: (error: string | null) => void;
 }
 
-const CartMainView: React.FC<CartMainViewProps> = ({ onClose, cartItems, onUpdateQuantity, onRemoveItem, onEditItem, customerInfo, onInfoChange, totalPrice, handleCheckout, orderType, setOrderType, validationError, setValidationError }) => {
+const CartMainView: React.FC<CartMainViewProps> = ({ onClose, cartItems, onUpdateQuantity, onRemoveItem, onEditItem, customerInfo, onInfoChange, totalPrice, handleCheckout, isSubmitting, orderType, setOrderType, validationError, setValidationError }) => {
     const aggregatedOptions = useMemo(() => {
         const drinks: { [key: string]: number } = {};
         const sauces: { [key: string]: number } = {};
@@ -79,8 +80,8 @@ const CartMainView: React.FC<CartMainViewProps> = ({ onClose, cartItems, onUpdat
                             </button>
                         </div>
                     )}
-                    <button onClick={handleCheckout} className="w-full bg-green-600 text-white font-bold py-4 px-4 rounded-lg hover:bg-green-700 transition-colors text-lg flex justify-center items-center">
-                        列印訂單
+                    <button onClick={handleCheckout} disabled={isSubmitting} className="w-full bg-green-600 text-white font-bold py-4 px-4 rounded-lg hover:bg-green-700 transition-colors text-lg flex justify-center items-center disabled:bg-slate-400 disabled:cursor-not-allowed">
+                        {isSubmitting ? '處理中...' : '送出訂單並列印'}
                     </button>
                 </div>
             </>)}
@@ -95,10 +96,11 @@ interface CartProps {
     onUpdateQuantity: (cartId: string, newQuantity: number) => void;
     onRemoveItem: (cartId: string) => void;
     onEditItem: (cartId: string) => void;
-    onPrintRequest: (content: React.ReactNode) => void;
+    onSubmitAndPrint: (orderData: OrderData) => void;
+    isSubmitting: boolean;
 }
 
-const Cart: React.FC<CartProps> = ({ isOpen, onClose, cartItems, onUpdateQuantity, onRemoveItem, onEditItem, onPrintRequest }) => {
+const Cart: React.FC<CartProps> = ({ isOpen, onClose, cartItems, onUpdateQuantity, onRemoveItem, onEditItem, onSubmitAndPrint, isSubmitting }) => {
     const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ name: '', phone: '', tableNumber: '' });
     const [orderType, setOrderType] = useState<OrderType>('內用');
     const [validationError, setValidationError] = useState<string | null>(null);
@@ -133,12 +135,13 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, cartItems, onUpdateQuantit
 
     const handleCheckout = () => {
         setValidationError(null);
+        if (cartItems.length === 0) { setValidationError('您的購物車是空的'); return; }
         if (!customerInfo.name.trim()) { setValidationError('請填寫您的姓名'); return; }
         if (!customerInfo.phone.trim()) { setValidationError('請填寫您的電話'); return; }
         if (!/^[0-9]{10}$/.test(customerInfo.phone)) { setValidationError('請輸入有效的手機號碼（10位數字）'); return; }
 
         const orderData: OrderData = { items: cartItems, totalPrice, customerInfo, orderType };
-        onPrintRequest(<PrintableOrder order={orderData} />);
+        onSubmitAndPrint(orderData);
     };
 
     return (
@@ -157,6 +160,7 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, cartItems, onUpdateQuantit
                     setOrderType={setOrderType} 
                     totalPrice={totalPrice} 
                     handleCheckout={handleCheckout} 
+                    isSubmitting={isSubmitting}
                     validationError={validationError} 
                     setValidationError={setValidationError} 
                 />
