@@ -1,126 +1,117 @@
 import React, { useMemo } from 'react';
-import type { Order, OrderData, CartItem, SelectedSauce } from '../types';
+import type { Order, CartItem, OrderData } from '../types';
 
 type PrintableOrderProps = {
     order: Order | OrderData | null;
     orderId?: string | null;
 };
 
+const renderOrderItem = (item: CartItem) => (
+    <li key={item.cartId} className="mb-2 text-left">
+        <p className="font-semibold">{item.item.name} (${item.item.price}) x{item.quantity}</p>
+        <div className="text-xs text-slate-500 pl-2 mt-1 space-y-0.5">
+            {item.selectedDonenesses && Object.keys(item.selectedDonenesses).length > 0 && <p>熟度: {Object.entries(item.selectedDonenesses).map(([d, q]) => `${d}x${q}`).join(', ')}</p>}
+            {item.selectedSideChoices && Object.keys(item.selectedSideChoices).length > 0 && <p>簡餐附餐: {Object.entries(item.selectedSideChoices).map(([d, q]) => `${d}x${q}`).join(', ')}</p>}
+            {item.selectedMultiChoice && Object.keys(item.selectedMultiChoice).length > 0 && <p>口味: {Object.entries(item.selectedMultiChoice).map(([d, q]) => `${d}x${q}`).join(', ')}</p>}
+            {item.selectedDrinks && Object.keys(item.selectedDrinks).length > 0 && <p>飲料: {Object.entries(item.selectedDrinks).map(([d, q]) => `${d}x${q}`).join(', ')}</p>}
+            {item.selectedSauces && item.selectedSauces.length > 0 && <p>醬料: {item.selectedSauces.map(s => `${s.name}x${s.quantity}`).join(', ')}</p>}
+            {item.selectedDesserts && item.selectedDesserts.length > 0 && <p>甜品: {item.selectedDesserts.map(d => `${d.name}x${d.quantity}`).join(', ')}</p>}
+            {item.selectedPastas && item.selectedPastas.length > 0 && <p>義麵: {item.selectedPastas.map(p => `${p.name}x${p.quantity}`).join(', ')}</p>}
+            {item.selectedSingleChoiceAddon && <p>單點加購: {item.selectedSingleChoiceAddon}</p>}
+            {item.selectedAddons && item.selectedAddons.length > 0 && <p>其他加購: {item.selectedAddons.map(a => `${a.name} ($${a.price}) x${a.quantity}`).join(', ')}</p>}
+            {item.selectedNotes && <p>備註: {item.selectedNotes}</p>}
+        </div>
+    </li>
+);
+
+
 export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }) => {
     if (!order) {
-        return null;
+        return null; // Safety check to prevent crashing if order data is missing.
     }
-
-    // Merge items with the same configuration to show a consolidated list
-    const mergedItems = useMemo(() => {
-        if (!order?.items) return [];
-
-        const itemMap = new Map<string, CartItem>();
-        order.items.forEach(cartItem => {
-            const key = cartItem.cartKey;
-            const existing = itemMap.get(key);
-            
-            if (existing) {
-                const newQuantity = existing.quantity + cartItem.quantity;
-                const singleChoicePrice = existing.selectedSingleChoiceAddon && existing.item.customizations.singleChoiceAddon ? existing.item.customizations.singleChoiceAddon.price : 0;
-                const totalAddonPrice = (existing.selectedAddons || []).reduce((sum, addon) => sum + (addon.price * addon.quantity), 0);
-                const newTotalPrice = (existing.item.price + singleChoicePrice) * newQuantity + totalAddonPrice;
-                
-                itemMap.set(key, { ...existing, quantity: newQuantity, totalPrice: newTotalPrice });
-            } else {
-                itemMap.set(key, { ...cartItem });
-            }
-        });
-        return Array.from(itemMap.values());
-    }, [order?.items]);
-
-    // Calculate the total summary of all options across all items in the order
-    const summary = useMemo(() => {
-        if (!order?.items) return {};
-        const donenesses: { [key: string]: number } = {};
-        const sauces: { [key: string]: number } = {};
-        const drinks: { [key: string]: number } = {};
-        const desserts: { [key: string]: number } = {};
-        const pastas: { [key: string]: number } = {};
-        const components: { [key: string]: number } = {};
-        const sideChoices: { [key: string]: number } = {};
-        const addons: { [key: string]: number } = {};
-
-        order.items.forEach(cartItem => {
-            if (cartItem.selectedDonenesses) Object.entries(cartItem.selectedDonenesses).forEach(([name, quantity]) => donenesses[name] = (donenesses[name] || 0) + Number(quantity));
-            if (cartItem.selectedDrinks) Object.entries(cartItem.selectedDrinks).forEach(([name, quantity]) => drinks[name] = (drinks[name] || 0) + Number(quantity));
-            if (cartItem.selectedSauces) (cartItem.selectedSauces as SelectedSauce[]).forEach(sauce => sauces[sauce.name] = (sauces[sauce.name] || 0) + Number(sauce.quantity));
-            if (cartItem.selectedDesserts) cartItem.selectedDesserts.forEach(dessert => desserts[dessert.name] = (desserts[dessert.name] || 0) + Number(dessert.quantity));
-            if (cartItem.selectedPastas) cartItem.selectedPastas.forEach(pasta => pastas[pasta.name] = (pastas[pasta.name] || 0) + Number(pasta.quantity));
-            if (cartItem.selectedComponent) Object.entries(cartItem.selectedComponent).forEach(([name, quantity]) => components[name] = (components[name] || 0) + Number(quantity));
-            if (cartItem.selectedSideChoices) Object.entries(cartItem.selectedSideChoices).forEach(([name, quantity]) => sideChoices[name] = (sideChoices[name] || 0) + Number(quantity));
-            if (cartItem.selectedAddons) cartItem.selectedAddons.forEach(addon => addons[addon.name] = (addons[addon.name] || 0) + Number(addon.quantity));
-        });
-        
-        const result: { [key: string]: { [key: string]: number } } = { donenesses, components, drinks, sideChoices, sauces, desserts, pastas, addons };
-        
-        Object.keys(result).forEach(key => {
-            if (Object.keys(result[key]).length === 0) {
-                delete result[key];
-            }
-        });
-        return result;
-    }, [order?.items]);
-
-    const summaryTitles: { [key: string]: string } = {
-        donenesses: "熟度總計",
-        components: "炸物總計",
-        drinks: "飲料總計",
-        sideChoices: "簡餐附餐總計",
-        sauces: "醬料總計",
-        desserts: "甜品總計",
-        pastas: "義麵總計",
-        addons: "加購總計",
-    };
     
-    // Defines the order in which summary sections will appear on the ticket
-    const summaryOrder = ['donenesses', 'components', 'drinks', 'sideChoices', 'sauces', 'desserts', 'pastas', 'addons'];
+    const comboSummary = useMemo(() => {
+        const summary = {
+            mainCourses: 0,
+            fries: 0,
+            soups: 0,
+            breads: 0,
+            drinks: 0,
+        };
+
+        const comboItems = order.items.filter(
+            item => item.categoryTitle === '套餐' || item.categoryTitle === '組合餐'
+        );
+
+        if (comboItems.length === 0) return null;
+
+        comboItems.forEach(cartItem => {
+            const desc = cartItem.item.description || '';
+            const quantity = cartItem.quantity;
+            const customs = cartItem.item.customizations;
+
+            // Main courses
+            summary.mainCourses += quantity;
+
+            // Drinks are often a choice
+            if (customs.drinkChoice) {
+                const drinkCount = Object.values(cartItem.selectedDrinks || {}).reduce((a, b) => a + (b || 0), 0);
+                summary.drinks += drinkCount;
+            }
+
+            // Handle items with explicit side choices
+            if (customs.sideChoice) {
+                const sideChoices = cartItem.selectedSideChoices || {};
+                for (const [side, count] of Object.entries(sideChoices)) {
+                    if (side.includes('日湯')) summary.soups += count;
+                    if (side.includes('脆薯')) summary.fries += count;
+                    if (side.includes('飲料')) summary.drinks += count; // Can also be a side choice
+                }
+            } else {
+                // Handle standard combos with implicit sides from description
+                if (desc.includes('日湯')) summary.soups += quantity;
+                if (desc.includes('麵包')) summary.breads += quantity;
+                if (desc.includes('脆薯')) summary.fries += quantity;
+                // If drink is not a choice, it might be an implicit inclusion
+                if (!customs.drinkChoice && desc.includes('飲料')) {
+                     summary.drinks += quantity;
+                }
+            }
+        });
+        
+        if (Object.values(summary).every(v => v === 0)) {
+            return null;
+        }
+
+        return summary;
+    }, [order]);
     
     const finalOrderId = 'id' in order ? order.id : orderId;
-    const separator = (text: string) => <p className="text-center font-bold my-2">- {text} -</p>;
-
+    
     return (
-        <div className="p-2 bg-white text-black" style={{ width: '280px', margin: '0 auto', fontFamily: 'monospace', fontSize: '20px', lineHeight: '1.5' }}>
-            <div className="font-bold">
-                {finalOrderId && <p>單號: {finalOrderId.slice(-6)} 餐點內容 -</p>}
-                <p>餐點總計:${order.totalPrice}</p>
-            </div>
-            
-            <hr className="border-black border-dashed my-2" />
+        <div className="p-4 bg-white">
+            <h3 className="text-lg font-bold text-center mb-2">訂單摘要</h3>
+            {finalOrderId && <p><strong>訂單號:</strong> {finalOrderId}</p>}
+            <p><strong>顧客:</strong> {order.customerInfo.name} ({order.customerInfo.phone})</p>
+            <p><strong>類型:</strong> {order.orderType} {order.customerInfo.tableNumber && `(${order.customerInfo.tableNumber}桌)`}</p>
+            <hr className="my-2" />
+            <ul className="text-sm">
+                {order.items.map(renderOrderItem)}
+            </ul>
+            <hr className="my-2" />
+            <p className="text-right font-bold text-lg">總計: ${order.totalPrice}</p>
 
-            <div className="my-2 space-y-1">
-                {mergedItems.map((item) => (
-                    <div key={item.cartKey}>
-                        <p>
-                            {item.item.name.replace(/半全餐|半套餐/g, '套餐')} x{item.quantity} (${item.totalPrice})
-                        </p>
-                    </div>
-                ))}
-            </div>
-            
-            {Object.keys(summary).length > 0 && (
+            {comboSummary && (
                 <>
-                    {separator("總計列表")}
-                    <div className="my-2 space-y-2 font-semibold">
-                        {summaryOrder.map(key => {
-                             if (summary[key]) {
-                                return (
-                                    <div key={key}>
-                                        <p>{summaryTitles[key]}:</p>
-                                        {Object.entries(summary[key]).map(([name, quantity]) => (
-                                            <p key={name} className="pl-2">- {name} x{quantity}</p>
-                                        ))}
-                                    </div>
-                                );
-                            }
-                            return null;
-                        })}
-                    </div>
+                    <hr className="my-2 border-dashed" />
+                    <h4 className="font-bold text-center mb-1">套餐附餐總覽</h4>
+                    <ul className="text-sm">
+                        {comboSummary.mainCourses > 0 && <li className="flex justify-between"><span>主餐:</span> <span>{comboSummary.mainCourses} 份</span></li>}
+                        {comboSummary.soups > 0 && <li className="flex justify-between"><span>湯品:</span> <span>{comboSummary.soups} 份</span></li>}
+                        {comboSummary.breads > 0 && <li className="flex justify-between"><span>麵包:</span> <span>{comboSummary.breads} 份</span></li>}
+                        {comboSummary.fries > 0 && <li className="flex justify-between"><span>脆薯:</span> <span>{comboSummary.fries} 份</span></li>}
+                        {comboSummary.drinks > 0 && <li className="flex justify-between"><span>飲料:</span> <span>{comboSummary.drinks} 份</span></li>}
+                    </ul>
                 </>
             )}
         </div>

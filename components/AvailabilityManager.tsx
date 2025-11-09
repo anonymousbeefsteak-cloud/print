@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { apiService } from '../services/apiService';
-import type { MenuCategory, Addon, OptionsData, Option } from '../types';
+import type { MenuCategory, Addon, OptionsData } from '../types';
 
 const ToggleSwitch: React.FC<{
   enabled: boolean;
@@ -58,8 +58,7 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ isOpen, onAva
       const optionsAvail = Object.fromEntries(
           Object.entries(options).map(([key, val]) => [
               key,
-              // FIX: Ensure val is an array before calling .map to prevent 'unknown' type error.
-              Object.fromEntries((Array.isArray(val) ? val : []).map((opt: Option) => [opt.name, opt.isAvailable]))
+              Object.fromEntries(val.map(opt => [opt.name, opt.isAvailable]))
           ])
       );
       
@@ -82,7 +81,7 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ isOpen, onAva
       const optionsAvail = initialOptions ? Object.fromEntries(
           Object.entries(initialOptions).map(([key, val]) => [
               key,
-              Object.fromEntries((Array.isArray(val) ? val : []).map((opt: Option) => [opt.name, opt.isAvailable]))
+              Object.fromEntries(val.map(opt => [opt.name, opt.isAvailable]))
           ])
       ) : {};
       return { menu: menuAvail, addons: addonAvail, options: optionsAvail };
@@ -188,17 +187,12 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ isOpen, onAva
         </div>
       ))}
       
-      {initialOptions && optionSections.map(section => {
-        const optionsList = initialOptions[section.key];
-        if (!Array.isArray(optionsList) || optionsList.length === 0) {
-            return null;
-        }
-        return (
+      {initialOptions && optionSections.map(section => (
+        (initialOptions[section.key] && initialOptions[section.key].length > 0) && (
             <div key={section.key} className="bg-white p-4 rounded-lg shadow-sm">
                 <h3 className="text-lg font-bold text-slate-700 border-b pb-2 mb-4">{section.title}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {/* FIX: Explicitly type `option` to resolve type inference issues where `optionsList` is treated as `unknown[]`. */}
-                    {optionsList.map((option: Option) => (
+                    {initialOptions[section.key].map(option => (
                         <div key={option.name} className="flex justify-between items-center bg-slate-50 p-3 rounded-md">
                             <span className="text-sm font-medium text-slate-800">{option.name}</span>
                             <ToggleSwitch
@@ -211,7 +205,7 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ isOpen, onAva
                 </div>
             </div>
         )
-      })}
+      ))}
 
       <div className="sticky bottom-0 bg-white/80 backdrop-blur-sm p-4 rounded-t-lg shadow-lg -mx-6 -mb-6 mt-8">
         {successMessage && <div className="text-green-600 bg-green-100 p-3 rounded-md text-center mb-3">{successMessage}</div>}

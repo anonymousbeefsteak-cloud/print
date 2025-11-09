@@ -83,10 +83,7 @@ const ItemModal: React.FC<ItemModalProps> = ({ selectedItem, editingItem, addons
     setter(prev => {
       const currentCount = prev[name] || 0;
       const newCount = Math.max(0, currentCount + change);
-      // FIX: Ensure values are treated as numbers to prevent 'unknown' type errors in reduce.
-      // By typing the accumulator `a` as `number`, we ensure correct type inference for `totalCount`.
-      // The original `Number(b) || 0` was buggy for undefined values. `(b || 0)` is safer.
-      const totalCount = Object.values({ ...prev, [name]: newCount }).reduce((a: number, b: any) => a + (b || 0), 0);
+      const totalCount = Object.values({ ...prev, [name]: newCount }).reduce((a, b) => a + b, 0);
       if (totalCount > limit) return prev;
       const newObject = { ...prev, [name]: newCount };
       if (newCount === 0) delete newObject[name];
@@ -140,19 +137,14 @@ const ItemModal: React.FC<ItemModalProps> = ({ selectedItem, editingItem, addons
   }, [item.price, quantity, selectedAddons, selectedSingleChoiceAddon, custom.singleChoiceAddon]);
 
   // Counts for UI display
-  // FIX: Ensure values are treated as numbers to prevent 'unknown' type errors in reduce. The original logic was also buggy with undefined values.
-  const donenessCount = useMemo(() => Object.values(selectedDonenesses).reduce((a: number, b: any) => a + (b || 0), 0), [selectedDonenesses]);
+  const donenessCount = useMemo(() => Object.values(selectedDonenesses).reduce((a, b) => a + (b || 0), 0), [selectedDonenesses]);
   const sauceLimit = useMemo(() => (custom.saucesPerItem ? custom.saucesPerItem * quantity : quantity), [custom.saucesPerItem, quantity]);
-  // FIX: Ensure quantity is treated as a number to prevent 'unknown' type errors.
-  const sauceCount = useMemo(() => selectedSauces.reduce((sum, s) => sum + Number(s.quantity || 0), 0), [selectedSauces]);
-  // FIX: Ensure values are treated as numbers to prevent 'unknown' type errors in reduce. The original logic was also buggy with undefined values.
-  const drinkCount = useMemo(() => Object.values(selectedDrinks).reduce((a: number, b: any) => a + (b || 0), 0), [selectedDrinks]);
-  // FIX: Ensure values are treated as numbers to prevent 'unknown' type errors in reduce. The original logic was also buggy with undefined values.
-  const componentCount = useMemo(() => Object.values(selectedComponent).reduce((a: number, b: any) => a + (b || 0), 0), [selectedComponent]);
-  // FIX: Ensure values are treated as numbers to prevent 'unknown' type errors in reduce. The original logic was also buggy with undefined values.
-  const sideChoiceCount = useMemo(() => Object.values(selectedSideChoices).reduce((a: number, b: any) => a + (b || 0), 0), [selectedSideChoices]);
-  // FIX: Explicitly type accumulator to ensure correct type inference. The original logic was also buggy with undefined values.
-  const multiChoiceCount = useMemo(() => Object.values(selectedMultiChoice).reduce((a: number, b: any) => a + (b || 0), 0), [selectedMultiChoice]);
+  const sauceCount = useMemo(() => selectedSauces.reduce((sum, s) => sum + s.quantity, 0), [selectedSauces]);
+  const drinkCount = useMemo(() => Object.values(selectedDrinks).reduce((a, b) => a + (b || 0), 0), [selectedDrinks]);
+  const componentCount = useMemo(() => Object.values(selectedComponent).reduce((a, b) => a + (b || 0), 0), [selectedComponent]);
+  const sideChoiceLimit = useMemo(() => (custom.sideChoice ? custom.sideChoice.choices * quantity : 0), [custom.sideChoice, quantity]);
+  const sideChoiceCount = useMemo(() => Object.values(selectedSideChoices).reduce((a, b) => a + (b || 0), 0), [selectedSideChoices]);
+  const multiChoiceCount = useMemo(() => Object.values(selectedMultiChoice).reduce((a, b) => a + (b || 0), 0), [selectedMultiChoice]);
 
   const dessertACount = useMemo(() => {
       if (!custom.dessertChoice) return 0;
@@ -176,7 +168,6 @@ const ItemModal: React.FC<ItemModalProps> = ({ selectedItem, editingItem, addons
       return selectedPastas.filter(p => pastaGroupB.includes(p.name)).reduce((s, p) => s + p.quantity, 0);
   }, [selectedPastas, options.pastasB, custom.pastaChoice]);
 
-  const sideChoiceLimit = useMemo(() => (custom.sideChoice ? custom.sideChoice.choices * quantity : 0), [custom.sideChoice, quantity]);
 
   const handleConfirm = () => {
     setValidationError(null);

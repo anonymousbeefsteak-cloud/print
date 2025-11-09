@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import type { CartItem, CustomerInfo, OrderData, OrderType, SelectedSauce } from '../types';
 import { CloseIcon, CartIcon, MinusIcon, PlusIcon, TrashIcon } from './icons';
+import { PrintableOrder } from './PrintableOrder';
 
 interface CartMainViewProps {
     onClose: () => void;
@@ -12,14 +13,13 @@ interface CartMainViewProps {
     onInfoChange: (field: keyof CustomerInfo, value: string) => void;
     totalPrice: number;
     handleCheckout: () => void;
-    isSubmitting: boolean;
     orderType: OrderType;
     setOrderType: (type: OrderType) => void;
     validationError: string | null;
     setValidationError: (error: string | null) => void;
 }
 
-const CartMainView: React.FC<CartMainViewProps> = ({ onClose, cartItems, onUpdateQuantity, onRemoveItem, onEditItem, customerInfo, onInfoChange, totalPrice, handleCheckout, isSubmitting, orderType, setOrderType, validationError, setValidationError }) => {
+const CartMainView: React.FC<CartMainViewProps> = ({ onClose, cartItems, onUpdateQuantity, onRemoveItem, onEditItem, customerInfo, onInfoChange, totalPrice, handleCheckout, orderType, setOrderType, validationError, setValidationError }) => {
     const aggregatedOptions = useMemo(() => {
         const drinks: { [key: string]: number } = {};
         const sauces: { [key: string]: number } = {};
@@ -79,8 +79,8 @@ const CartMainView: React.FC<CartMainViewProps> = ({ onClose, cartItems, onUpdat
                             </button>
                         </div>
                     )}
-                    <button onClick={handleCheckout} disabled={isSubmitting} className="w-full bg-green-600 text-white font-bold py-4 px-4 rounded-lg hover:bg-green-700 transition-colors text-lg flex justify-center items-center disabled:bg-slate-400">
-                        {isSubmitting ? <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-white"></div> : '送出訂單'}
+                    <button onClick={handleCheckout} className="w-full bg-green-600 text-white font-bold py-4 px-4 rounded-lg hover:bg-green-700 transition-colors text-lg flex justify-center items-center">
+                        列印訂單
                     </button>
                 </div>
             </>)}
@@ -95,13 +95,12 @@ interface CartProps {
     onUpdateQuantity: (cartId: string, newQuantity: number) => void;
     onRemoveItem: (cartId: string) => void;
     onEditItem: (cartId: string) => void;
-    onSubmitOrder: (orderData: OrderData) => Promise<{ success: boolean; orderId?: string; message?: string; }>;
+    onPrintRequest: (content: React.ReactNode) => void;
 }
 
-const Cart: React.FC<CartProps> = ({ isOpen, onClose, cartItems, onUpdateQuantity, onRemoveItem, onEditItem, onSubmitOrder }) => {
+const Cart: React.FC<CartProps> = ({ isOpen, onClose, cartItems, onUpdateQuantity, onRemoveItem, onEditItem, onPrintRequest }) => {
     const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ name: '', phone: '', tableNumber: '' });
     const [orderType, setOrderType] = useState<OrderType>('內用');
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [validationError, setValidationError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -132,20 +131,14 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, cartItems, onUpdateQuantit
 
     const totalPrice = useMemo(() => cartItems.reduce((total, item) => total + item.totalPrice, 0), [cartItems]);
 
-    const handleCheckout = async () => {
+    const handleCheckout = () => {
         setValidationError(null);
         if (!customerInfo.name.trim()) { setValidationError('請填寫您的姓名'); return; }
         if (!customerInfo.phone.trim()) { setValidationError('請填寫您的電話'); return; }
         if (!/^[0-9]{10}$/.test(customerInfo.phone)) { setValidationError('請輸入有效的手機號碼（10位數字）'); return; }
 
-        setIsSubmitting(true);
-        const orderData = { items: cartItems, totalPrice, customerInfo, orderType };
-        const result = await onSubmitOrder(orderData);
-        
-        if (!result.success) {
-            setValidationError(result.message || '訂單提交失敗，請稍後再試。');
-        }
-        setIsSubmitting(false);
+        const orderData: OrderData = { items: cartItems, totalPrice, customerInfo, orderType };
+        onPrintRequest(<PrintableOrder order={orderData} />);
     };
 
     return (
@@ -164,7 +157,6 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, cartItems, onUpdateQuantit
                     setOrderType={setOrderType} 
                     totalPrice={totalPrice} 
                     handleCheckout={handleCheckout} 
-                    isSubmitting={isSubmitting} 
                     validationError={validationError} 
                     setValidationError={setValidationError} 
                 />

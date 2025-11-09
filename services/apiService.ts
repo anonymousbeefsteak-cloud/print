@@ -1,7 +1,7 @@
 import type { MenuCategory, Addon, OrderData, Order, OrderSummary, OrderStatus, SalesStatistics, OptionsData } from '../types';
 import { MENU_DATA, ADDONS, SAUCE_CHOICES, DESSERT_CHOICES_A, DESSERT_CHOICES_B, PASTA_CHOICES_A, PASTA_CHOICES_B, COLD_NOODLE_CHOICES } from '../constants';
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbzve22Hzt4s9oP8F7t4pZPZhSDJmRl3q7uqUD4f-M4TnAekkyYGcQ9PE0zWmTcJB3AL/exec'; 
+const API_URL = 'https://script.google.com/macros/s/AKfycbysg8PL7L7w9cnhkHwHhZVBwgZo70bVIA6C84KnkBc_g1wHQmUTfZnj46pr3YEol6QT/exec'; 
 
 const generateFallbackOptions = (): OptionsData => ({
     sauces: SAUCE_CHOICES.map(s => ({ name: s, isAvailable: true })),
@@ -65,7 +65,7 @@ const apiService = {
     } catch (error) {
       console.error("Failed to submit order:", error);
       const message = error instanceof Error ? error.message : 'An unknown error occurred during order submission.';
-      return { success: false, message: message };
+      throw new Error(message);
     }
   },
 
