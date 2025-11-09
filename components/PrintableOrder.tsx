@@ -6,42 +6,96 @@ type PrintableOrderProps = {
     orderId?: string | null;
 };
 
+interface AggregatedMeal {
+    name: string;
+    totalQuantity: number;
+    lineTotalPrice: number;
+    donenesses: Map<string, number>;
+}
+
 export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }) => {
     if (!order) {
         return null;
     }
 
-    // Aggregates sauces, drinks, and addons from the entire order
     const aggregated = useMemo(() => {
         const sauces = new Map<string, number>();
         const drinks = new Map<string, number>();
         const addons = new Map<string, { quantity: number; price: number }>();
+        const meals = new Map<string, AggregatedMeal>();
 
-        const addToMap = (map: Map<string, number>, key: string, value: number) => {
-            if (key && value > 0) map.set(key, (map.get(key) || 0) + value);
-        };
-
-        const addToAddonsMap = (name: string, quantity: number, price: number) => {
-            if (name && quantity > 0) {
-                const existing = addons.get(name);
-                if (existing) {
-                    existing.quantity += quantity;
-                } else {
-                    // Price is per-unit price
-                    addons.set(name, { quantity, price });
+        const getItemDisplayName = (item: CartItem): string => {
+            let name = item.item.name.replace(/半全餐|半套餐/g, '套餐');
+    
+            if (item.selectedComponent && Object.keys(item.selectedComponent).length > 0) {
+                const componentChoice = Object.keys(item.selectedComponent)[0];
+                name = name.replace(/\(.*\)/, `+${componentChoice}`);
+            }
+            
+            if (item.selectedPastas && item.selectedPastas.length > 0) {
+                const pastaMain = item.selectedPastas.find(p => p.name.includes('天使義麵'));
+                const pastaSauce = item.selectedPastas.find(p => p.name.includes('索士'));
+                if (pastaMain && pastaSauce) {
+                    name = `(${pastaSauce.name.replace('索士','')})${pastaMain.name.replace('天使義麵','')}義麵`;
                 }
             }
+            
+            if (item.selectedDesserts && item.selectedDesserts.length > 0) {
+                name = item.selectedDesserts.map(d => d.name).join(' + ');
+            }
+            
+            if (item.selectedMultiChoice && Object.keys(item.selectedMultiChoice).length > 0) {
+                const flavor = Object.keys(item.selectedMultiChoice)[0];
+                 name = `(${flavor})${name}`;
+            }
+    
+            return name;
         };
 
+
         for (const item of order.items) {
+            const key = getItemDisplayName(item);
+            const existingMeal = meals.get(key);
+
+            if (existingMeal) {
+                existingMeal.totalQuantity += item.quantity;
+                existingMeal.lineTotalPrice += item.item.price * item.quantity;
+                if (item.selectedDonenesses) {
+                    for (const [level, count] of Object.entries(item.selectedDonenesses)) {
+                        existingMeal.donenesses.set(level, (existingMeal.donenesses.get(level) || 0) + count);
+                    }
+                }
+            } else {
+                const donenessMap = new Map<string, number>();
+                if (item.selectedDonenesses) {
+                    for (const [level, count] of Object.entries(item.selectedDonenesses)) {
+                        donenessMap.set(level, count);
+                    }
+                }
+                meals.set(key, {
+                    name: key,
+                    totalQuantity: item.quantity,
+                    lineTotalPrice: item.item.price * item.quantity,
+                    donenesses: donenessMap,
+                });
+            }
+
+            // Aggregate other options
             if (item.selectedSauces) {
-                item.selectedSauces.forEach(s => addToMap(sauces, s.name, s.quantity));
+                item.selectedSauces.forEach(s => sauces.set(s.name, (sauces.get(s.name) || 0) + s.quantity));
             }
             if (item.selectedDrinks) {
-                Object.entries(item.selectedDrinks).forEach(([k, v]) => addToMap(drinks, k, Number(v) || 0));
+                Object.entries(item.selectedDrinks).forEach(([k, v]) => drinks.set(k, (drinks.get(k) || 0) + Number(v)));
             }
             if (item.selectedAddons) {
-                item.selectedAddons.forEach(a => addToAddonsMap(a.name, a.quantity, a.price));
+                item.selectedAddons.forEach(a => {
+                    const existing = addons.get(a.name);
+                    if (existing) {
+                        existing.quantity += a.quantity;
+                    } else {
+                        addons.set(a.name, { quantity: a.quantity, price: a.price });
+                    }
+                });
             }
         }
 
@@ -49,89 +103,46 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
             Array.from(map.entries()).map(([name, quantity]) => `${name} x${quantity}`).join(', ');
 
         const formatAddonsMap = (map: Map<string, { quantity: number; price: number }>) =>
-            Array.from(map.entries()).map(([name, data]) => `${name} x${data.quantity}(${data.price * data.quantity})`).join(', ');
+            Array.from(map.entries()).map(([name, data]) => `${name} x${data.quantity}($${data.price * data.quantity})`).join(', ');
 
         return {
             sauces: formatMap(sauces),
             drinks: formatMap(drinks),
             addons: formatAddonsMap(addons),
+            meals: Array.from(meals.values()),
         };
     }, [order.items]);
 
-    // Generates the descriptive name for a cart item
-    const getItemDisplayName = (item: CartItem): string => {
-        let name = item.item.name.replace(/半全餐|半套餐/g, '套餐');
-
-        if (item.selectedComponent && Object.keys(item.selectedComponent).length > 0) {
-            const componentChoice = Object.keys(item.selectedComponent)[0];
-            name = name.replace(/\(.*\)/, `+${componentChoice}`);
-        }
-        
-        if (item.selectedPastas && item.selectedPastas.length > 0) {
-            const pastaMain = item.selectedPastas.find(p => p.name.includes('天使義麵'));
-            const pastaSauce = item.selectedPastas.find(p => p.name.includes('索士'));
-            if (pastaMain && pastaSauce) {
-                name = `(${pastaSauce.name.replace('索士','')})${pastaMain.name.replace('天使義麵','')}義麵`;
-            }
-        }
-        
-        if (item.selectedDesserts && item.selectedDesserts.length > 0) {
-            name = item.selectedDesserts.map(d => d.name).join(' + ');
-        }
-        
-        if (item.selectedMultiChoice && Object.keys(item.selectedMultiChoice).length > 0) {
-            const flavor = Object.keys(item.selectedMultiChoice)[0];
-             name = `(${flavor})${name}`;
-        }
-
-        return name;
-    };
-
-    // Formats the doneness string for an item
-    const formatDoneness = (item: CartItem): string | null => {
-        if (item.selectedDonenesses && Object.keys(item.selectedDonenesses).length > 0) {
-            return Object.entries(item.selectedDonenesses)
-                .map(([d, q]) => `${d.replace('分熟', '分')}x${q}`)
-                .join('. ');
-        }
-        return null;
-    };
-
     const finalOrderId = 'id' in order ? order.id : orderId;
-    const orderTypeString = order.orderType;
+    
+    const pStyle = { margin: 0, whiteSpace: 'normal', wordBreak: 'break-word' as const };
+    const separatorStyle = { border: 'none', borderTop: '1px dashed black', margin: '2px 0' };
 
-    const mainMealLines = order.items.map(item => {
-        const name = getItemDisplayName(item);
-        const quantity = item.quantity;
-        const lineTotalPrice = item.item.price * quantity;
-        const doneness = formatDoneness(item);
-
-        let mainPart;
-        if (item.item.customizations.doneness) {
-            mainPart = `${name} x ${quantity} ($${lineTotalPrice})`;
-        } else {
-            mainPart = `${name}(${item.item.price}) x${quantity}(${lineTotalPrice})`;
-        }
+    const mainMealLines = aggregated.meals.map((meal, index) => {
+        const donenessStr = Array.from(meal.donenesses.entries())
+            .map(([level, count]) => `${level.replace('分熟', '分')}x${count}`)
+            .join('. ');
 
         return (
-            <p key={item.cartId} style={{ margin: 0, padding: '0.25mm 0' }}>
-                {mainPart}
-                {doneness && ` / ${doneness}`}
+            <p key={index} style={pStyle}>
+                {`${meal.name} x ${meal.totalQuantity} ($${meal.lineTotalPrice})`}
+                {donenessStr && ` / ${donenessStr}`}
             </p>
         );
     });
 
     return (
-        <div style={{ width: '58mm', padding: '1mm', backgroundColor: 'white', color: 'black', fontFamily: 'monospace', fontSize: '28px', lineHeight: 1.2 }}>
-            <p style={{ margin: 0, fontWeight: 'bold' }}>
-                訂單號: {finalOrderId?.slice(-6) || 'xxx'} 類型: {orderTypeString} 共計 ${order.totalPrice}
+        <div style={{ width: '58mm', padding: '0', backgroundColor: 'white', color: 'black', fontFamily: 'monospace', fontSize: '28px', lineHeight: 1.2 }}>
+            <p style={pStyle}>
+                單號: {finalOrderId?.slice(-6) || 'xxx'} 類型: {order.orderType} 共計${order.totalPrice}
             </p>
+            <hr style={separatorStyle} />
             
-            <div>{mainMealLines}</div>
-
-            {aggregated.sauces && <p style={{ margin: 0 }}>{aggregated.sauces}</p>}
-            {aggregated.drinks && <p style={{ margin: 0 }}>{aggregated.drinks}</p>}
-            {aggregated.addons && <p style={{ margin: 0 }}>{aggregated.addons}</p>}
+            {mainMealLines.length > 0 && <div>{mainMealLines}</div>}
+            
+            {aggregated.addons && <><hr style={separatorStyle} /><p style={pStyle}>{aggregated.addons}</p></>}
+            {aggregated.sauces && <><hr style={separatorStyle} /><p style={pStyle}>{aggregated.sauces}</p></>}
+            {aggregated.drinks && <><hr style={separatorStyle} /><p style={pStyle}>{aggregated.drinks}</p></>}
         </div>
     );
 };
