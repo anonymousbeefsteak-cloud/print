@@ -116,7 +116,7 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
     const finalOrderId = 'id' in order ? order.id : orderId;
     
     const pStyle = { margin: 0, whiteSpace: 'normal', wordBreak: 'break-word' as const };
-    const separatorStyle = { border: 'none', borderTop: '1px dashed black', margin: '0' };
+    const headerStyle = { ...pStyle, textAlign: 'center' as const };
 
     const mainMealLines = aggregated.meals.map((meal, index) => {
         const donenessStr = Array.from(meal.donenesses.entries())
@@ -138,31 +138,31 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
             </p>
             
             {mainMealLines.length > 0 && (
-                <React.Fragment>
-                    <hr style={separatorStyle} />
+                <>
+                    <p style={headerStyle}>---主餐---</p>
                     {mainMealLines}
-                </React.Fragment>
+                </>
             )}
             
             {aggregated.addons && (
-                <React.Fragment>
-                    <hr style={separatorStyle} />
+                <>
+                    <p style={headerStyle}>---加購---</p>
                     <p style={pStyle}>{aggregated.addons}</p>
-                </React.Fragment>
+                </>
             )}
 
             {aggregated.sauces && (
-                <React.Fragment>
-                    <hr style={separatorStyle} />
+                <>
+                    <p style={headerStyle}>---醬料---</p>
                     <p style={pStyle}>{aggregated.sauces}</p>
-                </React.Fragment>
+                </>
             )}
 
             {aggregated.drinks && (
-                <React.Fragment>
-                    <hr style={separatorStyle} />
+                <>
+                    <p style={headerStyle}>---飲料---</p>
                     <p style={pStyle}>{aggregated.drinks}</p>
-                </React.Fragment>
+                </>
             )}
         </div>
     );
