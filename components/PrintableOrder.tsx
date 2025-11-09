@@ -116,7 +116,7 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
     const finalOrderId = 'id' in order ? order.id : orderId;
     
     const pStyle = { margin: 0, whiteSpace: 'normal', wordBreak: 'break-word' as const };
-    const separatorStyle = { border: 'none', borderTop: '1px dashed black', margin: '1px 0' };
+    const separatorStyle = { border: 'none', borderTop: '1px dashed black', margin: '0' };
 
     const mainMealLines = aggregated.meals.map((meal, index) => {
         const donenessStr = Array.from(meal.donenesses.entries())
@@ -132,27 +132,37 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
     });
 
     return (
-        <div style={{ width: '58mm', padding: '0', backgroundColor: 'white', color: 'black', fontFamily: 'monospace', fontSize: '28px', lineHeight: 1.1 }}>
+        <div style={{ width: '58mm', padding: '0', backgroundColor: 'white', color: 'black', fontFamily: 'monospace', fontSize: '28px', lineHeight: 1 }}>
             <p style={pStyle}>
                 單號: {finalOrderId?.slice(-6) || 'xxx'} 類型: {order.orderType} 共計${order.totalPrice}
             </p>
-            <hr style={separatorStyle} />
             
-            {mainMealLines.length > 0 && <div>{mainMealLines}</div>}
+            {mainMealLines.length > 0 && (
+                <React.Fragment>
+                    <hr style={separatorStyle} />
+                    {mainMealLines}
+                </React.Fragment>
+            )}
             
             {aggregated.addons && (
-                <>
+                <React.Fragment>
                     <hr style={separatorStyle} />
                     <p style={pStyle}>{aggregated.addons}</p>
-                </>
+                </React.Fragment>
             )}
 
-            {(aggregated.sauces || aggregated.drinks) && (
-                <>
+            {aggregated.sauces && (
+                <React.Fragment>
                     <hr style={separatorStyle} />
-                    {aggregated.sauces && <p style={pStyle}>{aggregated.sauces}</p>}
-                    {aggregated.drinks && <p style={pStyle}>{aggregated.drinks}</p>}
-                </>
+                    <p style={pStyle}>{aggregated.sauces}</p>
+                </React.Fragment>
+            )}
+
+            {aggregated.drinks && (
+                <React.Fragment>
+                    <hr style={separatorStyle} />
+                    <p style={pStyle}>{aggregated.drinks}</p>
+                </React.Fragment>
             )}
         </div>
     );
