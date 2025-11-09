@@ -390,4 +390,4 @@ const App: React.FC = () => {
     );
 };
 
-export default App;解釋就好
+export default App;
