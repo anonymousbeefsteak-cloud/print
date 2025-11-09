@@ -85,9 +85,9 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
 
             <div style={{ margin: '0.5mm 0' }}>
                 {Array.from(aggregated.mainMeals.entries()).map(([name, data]) => (
-                     <div key={name} style={{ margin: '0.2mm 0', overflow: 'hidden' }}>
-                        <span>{name} x{data.quantity}</span>
-                        <span style={{ float: 'right' }}>(${data.totalPrice})</span>
+                     <div key={name} style={{ margin: '0.2mm 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <span style={{ paddingRight: '1mm', wordBreak: 'break-all' }}>{name} x{data.quantity}</span>
+                        <span style={{ whiteSpace: 'nowrap' }}>(${data.totalPrice})</span>
                      </div>
                 ))}
             </div>

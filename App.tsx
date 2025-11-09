@@ -269,7 +269,7 @@ const App: React.FC = () => {
             <div className="print-area">
               {printContent}
             </div>
-            <div className="min-h-screen bg-slate-100 text-slate-800">
+            <div className="min-h-screen bg-slate-100 text-slate-800 no-print">
                  {notification && (
                     <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 text-center" role="alert">
                         <p className="font-bold">{notification}</p>
