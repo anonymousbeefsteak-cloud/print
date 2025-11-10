@@ -35,7 +35,7 @@ const App: React.FC = () => {
     const [notification, setNotification] = useState<string | null>(null);
 
     const promoSlides = [
-        'https://raw.githubusercontent.com/anonymousbeefsteak-cloud/print/main/bic2.jpg',
+        'https://raw.githubusercontent.com/anonymousbeefsteak-cloud/print/main/bs%20(2).jpg',
         'https://raw.githubusercontent.com/anonymousbeefsteak-cloud/print/main/bic.jpg'
     ];
 
