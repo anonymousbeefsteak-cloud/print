@@ -29,11 +29,6 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
         const getItemDisplayName = (item: CartItem): string => {
             let name = item.item.name.replace(/半全餐|半套餐/g, '套餐');
     
-            if (item.selectedComponent && Object.keys(item.selectedComponent).length > 0) {
-                const componentChoice = Object.keys(item.selectedComponent)[0];
-                name = name.replace(/\(.*\)/, `+${componentChoice}`);
-            }
-            
             if (item.selectedPastas && item.selectedPastas.length > 0) {
                 const pastaMain = item.selectedPastas.find(p => p.name.includes('天使義麵'));
                 const pastaSauce = item.selectedPastas.find(p => p.name.includes('索士'));

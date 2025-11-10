@@ -37,7 +37,7 @@ export const MENU_DATA: MenuCategory[] = [
     title: "甜品",
     items: [
         { id: 'dessert-choice-single', name: '任選甜品', price: 99, description: "A區、B區各任選一種。", customizations: { dessertChoice: true, notes: true }, isAvailable: true },
-        { id: 'dessert-choice-set', name: '任選甜品套餐', price: 200, description: "附:①日湯②主餐③脆薯④雞塊⑤飲料", customizations: { dessertChoice: true, drinkChoice: true, notes: true }, isAvailable: true },
+        { id: 'dessert-choice-set', name: '任選甜品套餐', price: 200, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { dessertChoice: true, drinkChoice: true, notes: true }, isAvailable: true },
     ]
   },
 ];
@@ -68,7 +68,7 @@ export const DESSERT_CHOICES_A = ["法式烤布蕾佐冰淇淋", "宇治紫米�
 export const DESSERT_CHOICES_B = ["蜜糖潛堡", "格子鬆餅", "美式鬆餅", "蜜糖吐司", "法式薄餅", "焦糖鍋巴", "蜜糖長棍", "香餅牛軋", "脆皮甜筒"];
 
 // New Pasta choices
-export const PASTA_CHOICES_A = ['日豬/煎豬排天使義麵', '炸魚/煎魚天使義麵', '炸雞/雞肉天使義麵', '炒牛肉片天使義大利麵'];
+export const PASTA_CHOICES_A = ['日豬/煎豬排天使義麵', '炒牛肉片天使義大利麵'];
 export const PASTA_CHOICES_B = ['蕃茄索士', '青醬索士', '蒜油索士', '奶油索士', '海鮮索士', '黑椒索士', '肉醬索士', '沙茶索士'];
 
 export const COLD_NOODLE_CHOICES = ["日式涼麵", "泰式涼麵", "沙茶涼麵", "蒜香涼麵", "金瓜涼麵", "巴薩米醋涼麵", "香葱涼麵", "凱撒涼麵", "橙汁涼麵", "黑胡椒涼麵", "台式涼麵", "BBQ涼麵"];

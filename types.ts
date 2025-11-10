@@ -11,11 +11,6 @@ export interface MultiChoice {
   options: string[];
 }
 
-export interface ComponentChoice {
-  title: string;
-  options: string[];
-}
-
 export interface SideChoice {
   title: string;
   options: string[];
@@ -29,7 +24,6 @@ export interface MenuItemCustomizations {
   drinkChoice?: boolean;
   dessertChoice?: boolean;
   pastaChoice?: boolean;
-  componentChoice?: ComponentChoice; 
   notes?: boolean;
   singleChoiceAddon?: SingleChoiceAddon;
   multiChoice?: MultiChoice;
@@ -105,7 +99,6 @@ export interface CartItem {
   selectedSauces?: SelectedSauce[];
   selectedDesserts?: SelectedDessert[];
   selectedPastas?: SelectedPasta[];
-  selectedComponent?: { [key: string]: number }; 
   selectedNotes?: string;
   selectedSingleChoiceAddon?: string;
   selectedMultiChoice?: { [key: string]: number };
