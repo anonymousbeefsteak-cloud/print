@@ -15,42 +15,51 @@ const Menu: React.FC<MenuProps> = ({ menuData, onSelectItem }) => {
           <div className="mb-6 pb-2 border-b-2 border-green-700">
             <h2 className="text-3xl font-bold text-slate-800">{category.title}</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {category.items.map((item) => {
-              const hasOtherOptions = item.customizations.dessertChoice || item.customizations.multiChoice || item.customizations.singleChoiceAddon;
-              
-              return (
-                <div key={item.id} className={`bg-white rounded-lg shadow-lg overflow-hidden flex flex-col transition-transform transform hover:scale-105 relative ${!item.isAvailable ? 'opacity-60 bg-slate-50 cursor-not-allowed' : ''}`}>
-                  {!item.isAvailable && <div className="absolute top-4 right-4 bg-red-600 text-white text-sm font-bold px-3 py-1 rounded-full z-10 transform -rotate-12">售罄</div>}
-                  <div className="p-6 flex-grow flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-xl font-semibold text-slate-900">{item.name.replace(/半全餐|半套餐/g, '套餐')}</h3>
-                      {item.weight && <p className="text-sm text-slate-500">{item.weight}</p>}
-                      {item.description && (
-                          <p className="text-xs text-slate-500 mt-1">{item.description}</p>
-                      )}
-                      <p className="text-2xl font-bold text-green-700 mt-2">${item.price}</p>
-                      {item.customizations && (
-                        <div className="mt-2 flex flex-wrap gap-1">
+          <div className="overflow-x-auto bg-white rounded-lg shadow-lg">
+            <table className="w-full text-sm text-left text-slate-600">
+              <thead className="text-xs text-slate-700 uppercase bg-slate-100">
+                <tr>
+                  <th scope="col" className="px-6 py-3 min-w-[250px]">品名</th>
+                  <th scope="col" className="px-6 py-3">重量</th>
+                  <th scope="col" className="px-6 py-3">價格</th>
+                  <th scope="col" className="px-6 py-3 min-w-[200px]">選項</th>
+                  <th scope="col" className="px-6 py-3 text-center">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {category.items.map((item) => {
+                  const hasOtherOptions = item.customizations.dessertChoice || item.customizations.multiChoice || item.customizations.singleChoiceAddon;
+                  return (
+                    <tr key={item.id} className={`border-b hover:bg-slate-50 ${!item.isAvailable ? 'opacity-60 bg-slate-50 cursor-not-allowed' : 'bg-white'}`}>
+                      <th scope="row" className="px-6 py-4 font-bold text-slate-900 whitespace-nowrap">
+                        {item.name.replace(/半全餐|半套餐/g, '套餐')}
+                        {item.description && <p className="text-xs text-slate-500 font-normal mt-1">{item.description}</p>}
+                      </th>
+                      <td className="px-6 py-4">{item.weight || '-'}</td>
+                      <td className="px-6 py-4 font-semibold text-green-700 text-base">${item.price}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap gap-1">
                           {item.customizations.doneness && <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">可選熟度</span>}
                           {item.customizations.sauceChoice && <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">可選醬料</span>}
                           {item.customizations.drinkChoice && <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">可選附餐</span>}
-                          {hasOtherOptions && <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">更多選項</span>}
+                           {hasOtherOptions && <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">更多選項</span>}
                         </div>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => onSelectItem(item, category)}
-                      disabled={!item.isAvailable}
-                      className="mt-4 w-full flex items-center justify-center bg-green-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition-colors disabled:bg-slate-400 disabled:cursor-not-allowed"
-                    >
-                      <PlusIcon className="h-5 w-5 mr-2" />
-                      <span>{item.isAvailable ? '加入餐點' : '已售完'}</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => onSelectItem(item, category)}
+                          disabled={!item.isAvailable}
+                          className="w-full max-w-[120px] flex items-center justify-center bg-green-600 text-white font-semibold py-2 px-3 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition-colors disabled:bg-slate-400 disabled:cursor-not-allowed"
+                        >
+                          <PlusIcon className="h-4 w-4 mr-1" />
+                          <span>{item.isAvailable ? '加入' : '售罄'}</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       ))}
