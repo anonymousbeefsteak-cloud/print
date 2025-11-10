@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { apiService } from '../services/apiService';
 import type { MenuCategory, Addon, OptionsData, Option } from '../types';
@@ -169,7 +171,7 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ isOpen, onSto
   if (error) return <p className="text-red-500 bg-red-100 p-3 rounded-md text-center">{error}</p>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="bg-white p-4 rounded-lg shadow-sm">
         <h3 className="text-lg font-bold text-slate-700 border-b pb-2 mb-4">營業狀態</h3>
         <div className="flex justify-between items-center bg-slate-50 p-3 rounded-md">
@@ -185,79 +187,65 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ isOpen, onSto
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Column 1: Menu */}
-        <div className="space-y-6">
-            <h2 className="text-xl font-bold text-slate-800 border-b-2 border-slate-300 pb-2">主餐菜單</h2>
-            {initialMenu.map(category => (
-                <div key={category.title} className="bg-white p-4 rounded-lg shadow-sm">
-                    <h3 className="text-lg font-bold text-slate-700 border-b pb-2 mb-4">{category.title}</h3>
-                    <div className="space-y-3">
-                        {category.items.map(item => (
-                            <div key={item.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-md">
-                                <span className="text-sm font-medium text-slate-800">{item.name}</span>
-                                <ToggleSwitch
-                                    enabled={availability.menu[item.id] ?? false}
-                                    onChange={newStatus => handleToggle('menu', item.id, newStatus)}
-                                    label={`menu-${item.id}`}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                </div>
+      {initialMenu.map(category => (
+        <div key={category.title} className="bg-white p-4 rounded-lg shadow-sm">
+          <h3 className="text-lg font-bold text-slate-700 border-b pb-2 mb-4">{category.title}</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {category.items.map(item => (
+              <div key={item.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-md">
+                <span className="text-sm font-medium text-slate-800">{item.name}</span>
+                <ToggleSwitch
+                  enabled={availability.menu[item.id] ?? false}
+                  onChange={newStatus => handleToggle('menu', item.id, newStatus)}
+                  label={`menu-${item.id}`}
+                />
+              </div>
             ))}
+          </div>
         </div>
+      ))}
 
-        {/* Column 2: Addons */}
-        <div className="space-y-6">
-            <h2 className="text-xl font-bold text-slate-800 border-b-2 border-slate-300 pb-2">加購項目</h2>
-            {Object.entries(addonGroups).map(([category, addons]) => (
-                <div key={category} className="bg-white p-4 rounded-lg shadow-sm">
-                    <h3 className="text-lg font-bold text-slate-700 border-b pb-2 mb-4">{category}</h3>
-                    <div className="space-y-3">
-                        {addons.map(addon => (
-                            <div key={addon.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-md">
-                                <span className="text-sm font-medium text-slate-800">{addon.name}</span>
-                                <ToggleSwitch
-                                    enabled={availability.addons[addon.id] ?? false}
-                                    onChange={newStatus => handleToggle('addons', addon.id, newStatus)}
-                                    label={`addon-${addon.id}`}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                </div>
+      {Object.entries(addonGroups).map(([category, addons]) => (
+        <div key={category} className="bg-white p-4 rounded-lg shadow-sm">
+          <h3 className="text-lg font-bold text-slate-700 border-b pb-2 mb-4">{category}</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {addons.map(addon => (
+              <div key={addon.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-md">
+                <span className="text-sm font-medium text-slate-800">{addon.name}</span>
+                <ToggleSwitch
+                  enabled={availability.addons[addon.id] ?? false}
+                  onChange={newStatus => handleToggle('addons', addon.id, newStatus)}
+                  label={`addon-${addon.id}`}
+                />
+              </div>
             ))}
+          </div>
         </div>
-
-        {/* Column 3: Options */}
-        <div className="space-y-6">
-             <h2 className="text-xl font-bold text-slate-800 border-b-2 border-slate-300 pb-2">可選項目</h2>
-            {initialOptions && optionSections.map(section => {
-                // FIX: Add type assertion to resolve 'unknown' type for optionsArray.
-                const optionsArray = initialOptions[section.key] as Option[];
-                if (!Array.isArray(optionsArray) || optionsArray.length === 0) return null;
-                
-                return (
-                    <div key={section.key} className="bg-white p-4 rounded-lg shadow-sm">
-                        <h3 className="text-lg font-bold text-slate-700 border-b pb-2 mb-4">{section.title}</h3>
-                        <div className="space-y-3">
-                            {optionsArray.map(option => (
-                                <div key={option.name} className="flex justify-between items-center bg-slate-50 p-3 rounded-md">
-                                    <span className="text-sm font-medium text-slate-800">{option.name}</span>
-                                    <ToggleSwitch
-                                        enabled={availability.options[section.key]?.[option.name] ?? false}
-                                        onChange={newStatus => handleToggle('options', option.name, newStatus, section.key)}
-                                        label={`option-${section.key}-${option.name}`}
-                                    />
-                                </div>
-                            ))}
+      ))}
+      
+      {/* FIX: Use Array.isArray to safely check and map over option arrays. */}
+      {initialOptions && optionSections.map(section => {
+        const optionsArray = initialOptions[section.key];
+        if (!Array.isArray(optionsArray) || optionsArray.length === 0) return null;
+        
+        return (
+            <div key={section.key} className="bg-white p-4 rounded-lg shadow-sm">
+                <h3 className="text-lg font-bold text-slate-700 border-b pb-2 mb-4">{section.title}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {optionsArray.map(option => (
+                        <div key={option.name} className="flex justify-between items-center bg-slate-50 p-3 rounded-md">
+                            <span className="text-sm font-medium text-slate-800">{option.name}</span>
+                            <ToggleSwitch
+                                enabled={availability.options[section.key]?.[option.name] ?? false}
+                                onChange={newStatus => handleToggle('options', option.name, newStatus, section.key)}
+                                label={`option-${section.key}-${option.name}`}
+                            />
                         </div>
-                    </div>
-                );
-            })}
-        </div>
-      </div>
+                    ))}
+                </div>
+            </div>
+        );
+      })}
 
       <div className="sticky bottom-0 bg-white/80 backdrop-blur-sm p-4 rounded-t-lg shadow-lg -mx-6 -mb-6 mt-8">
         {successMessage && <div className="text-green-600 bg-green-100 p-3 rounded-md text-center mb-3">{successMessage}</div>}
