@@ -9,9 +9,9 @@ interface MenuProps {
 
 const Menu: React.FC<MenuProps> = ({ menuData, onSelectItem }) => {
   return (
-    <div className="space-y-12">
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
       {menuData.map((category) => (
-        <div key={category.title} id={category.title}>
+        <div key={category.title} id={category.title} className="break-inside-avoid">
           <div className="mb-6 pb-2 border-b-2 border-green-700">
             <h2 className="text-3xl font-bold text-slate-800">{category.title}</h2>
           </div>
