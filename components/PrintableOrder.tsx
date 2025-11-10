@@ -107,7 +107,7 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
             Array.from(map.entries()).map(([name, quantity]) => `${name} x${quantity}`).join(', ');
 
         const formatAddonsMap = (map: Map<string, { quantity: number; price: number }>) =>
-            Array.from(map.entries()).map(([name, data]) => `${name} ($${data.price}) x${data.quantity} ($${data.price * data.quantity})`).join(', ');
+            Array.from(map.entries()).map(([name, data]) => `${name.replace(/\s/g, '')} x${data.quantity}($${data.price * data.quantity})`).join(', ');
 
         return {
             sauces: formatMap(sauces),
@@ -119,8 +119,8 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
 
     const finalOrderId = 'id' in order ? order.id : orderId;
     
-    const pStyle = { margin: 0, whiteSpace: 'normal', wordBreak: 'break-word' as const };
-    const headerStyle = { ...pStyle, textAlign: 'center' as const };
+    const pStyle: React.CSSProperties = { margin: 0, whiteSpace: 'normal', wordBreak: 'break-word', fontSize: '28px', lineHeight: 1.2 };
+    const headerStyle: React.CSSProperties = { textAlign: 'center', margin: '2px 0', padding: '2px 0', borderTop: '1px dashed black', fontSize: '28px', lineHeight: 1.2, fontWeight: 'bold' };
 
     const mainMealLines = aggregated.meals.map((meal, index) => {
         const donenessStr = Array.from(meal.donenesses.entries())
@@ -136,35 +136,36 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
     });
 
     return (
-        <div style={{ width: '58mm', padding: '0', backgroundColor: 'white', color: 'black', fontFamily: 'monospace', fontSize: '28px', lineHeight: 1 }}>
+        <div style={{ width: '58mm', padding: '0', backgroundColor: 'white', color: 'black', fontFamily: 'monospace' }}>
+            <p style={{...pStyle, textAlign: 'center', fontWeight: 'bold', marginBottom: '4px'}}>套餐附:①日湯②麵包③主餐④脆薯⑤飲料</p>
             <p style={pStyle}>
                 {`訂單號: ${finalOrderId?.slice(-6) || 'xxx'} \u00A0 類型: ${order.orderType} \u00A0 共計$${order.totalPrice}`}
             </p>
             
             {mainMealLines.length > 0 && (
                 <>
-                    <p style={headerStyle}>---主餐---</p>
+                    <p style={headerStyle}>主餐</p>
                     {mainMealLines}
                 </>
             )}
             
             {aggregated.addons && (
                 <>
-                    <p style={headerStyle}>---加購---</p>
+                    <p style={headerStyle}>加購</p>
                     <p style={pStyle}>{aggregated.addons}</p>
                 </>
             )}
 
             {aggregated.sauces && (
                 <>
-                    <p style={headerStyle}>---醬料---</p>
+                    <p style={headerStyle}>醬料</p>
                     <p style={pStyle}>{aggregated.sauces}</p>
                 </>
             )}
 
             {aggregated.drinks && (
                 <>
-                    <p style={headerStyle}>---飲料---</p>
+                    <p style={headerStyle}>飲料</p>
                     <p style={pStyle}>{aggregated.drinks}</p>
                 </>
             )}

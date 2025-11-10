@@ -1,8 +1,9 @@
 
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { GoogleGenAI } from "@google/genai";
 import type { CartItem, CustomerInfo, OrderData, OrderType, SelectedSauce } from '../types';
-import { CloseIcon, CartIcon, MinusIcon, PlusIcon, TrashIcon } from './icons';
+import { CloseIcon, CartIcon, MinusIcon, PlusIcon, TrashIcon, SparklesIcon } from './icons';
 import { PrintableOrder } from './PrintableOrder';
 
 interface CartMainViewProps {
@@ -20,9 +21,15 @@ interface CartMainViewProps {
     setOrderType: (type: OrderType) => void;
     validationError: string | null;
     setValidationError: (error: string | null) => void;
+    // AI Check props
+    isChecking: boolean;
+    isAiDisabled: boolean;
+    aiSuggestion: string | null;
+    handleAiCheck: () => void;
+    setAiSuggestion: (suggestion: string | null) => void;
 }
 
-const CartMainView: React.FC<CartMainViewProps> = ({ onClose, cartItems, onUpdateQuantity, onRemoveItem, onEditItem, customerInfo, onInfoChange, totalPrice, handleCheckout, isSubmitting, orderType, setOrderType, validationError, setValidationError }) => {
+const CartMainView: React.FC<CartMainViewProps> = ({ onClose, cartItems, onUpdateQuantity, onRemoveItem, onEditItem, customerInfo, onInfoChange, totalPrice, handleCheckout, isSubmitting, orderType, setOrderType, validationError, setValidationError, isChecking, isAiDisabled, aiSuggestion, handleAiCheck, setAiSuggestion }) => {
     const aggregatedOptions = useMemo(() => {
         const drinks: { [key: string]: number } = {};
         const sauces: { [key: string]: number } = {};
@@ -67,21 +74,34 @@ const CartMainView: React.FC<CartMainViewProps> = ({ onClose, cartItems, onUpdat
                 </div>
                 <div className="p-5 border-t bg-slate-50">
                     <div className="flex justify-between items-center mb-4"><span className="text-xl font-medium">總計</span><span className="text-3xl font-bold text-green-700">${totalPrice}</span></div>
-                    {validationError && (
-                        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 mb-3 rounded-md text-left relative" role="alert">
-                            <p className="font-bold pr-8">{validationError}</p>
-                            <button
-                                onClick={() => setValidationError(null)}
-                                className="absolute top-1/2 right-2 -translate-y-1/2 p-1.5 text-red-500 hover:bg-red-200 rounded-lg transition-colors"
-                                aria-label="關閉提示"
-                            >
+                    {aiSuggestion && (
+                        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-800 p-3 mb-3 rounded-md text-left relative" role="alert">
+                            <div className="flex gap-2">
+                                <SparklesIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                                <p className="text-sm pr-6">{aiSuggestion}</p>
+                            </div>
+                            <button onClick={() => setAiSuggestion(null)} className="absolute top-1/2 right-2 -translate-y-1/2 p-1.5 text-blue-500 hover:bg-blue-200 rounded-lg transition-colors" aria-label="關閉提示">
                                 <CloseIcon className="h-5 w-5" />
                             </button>
                         </div>
                     )}
-                    <button onClick={handleCheckout} disabled={isSubmitting} className="w-full bg-green-600 text-white font-bold py-4 px-4 rounded-lg hover:bg-green-700 transition-colors text-lg flex justify-center items-center disabled:bg-slate-400 disabled:cursor-not-allowed">
-                        {isSubmitting ? '處理中...' : '送出訂單'}
-                    </button>
+                    {validationError && (
+                        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 mb-3 rounded-md text-left relative" role="alert">
+                            <p className="font-bold pr-8">{validationError}</p>
+                            <button onClick={() => setValidationError(null)} className="absolute top-1/2 right-2 -translate-y-1/2 p-1.5 text-red-500 hover:bg-red-200 rounded-lg transition-colors" aria-label="關閉提示">
+                                <CloseIcon className="h-5 w-5" />
+                            </button>
+                        </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                        <button onClick={handleAiCheck} disabled={isChecking || isSubmitting || isAiDisabled} className="w-full bg-blue-600 text-white font-bold py-4 px-4 rounded-lg hover:bg-blue-700 transition-colors text-lg flex justify-center items-center disabled:bg-slate-400 disabled:cursor-not-allowed">
+                             <SparklesIcon className="h-5 w-5 mr-2" />
+                            {isChecking ? '檢查中...' : 'AI 訂單檢查'}
+                        </button>
+                        <button onClick={handleCheckout} disabled={isSubmitting || isChecking} className="w-full bg-green-600 text-white font-bold py-4 px-4 rounded-lg hover:bg-green-700 transition-colors text-lg flex justify-center items-center disabled:bg-slate-400 disabled:cursor-not-allowed">
+                            {isSubmitting ? '處理中...' : '送出訂單'}
+                        </button>
+                    </div>
                 </div>
             </>)}
         </div>
@@ -104,11 +124,24 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, cartItems, onUpdateQuantit
     const [orderType, setOrderType] = useState<OrderType>('內用');
     const [validationError, setValidationError] = useState<string | null>(null);
 
+    // AI Check State
+    const [isChecking, setIsChecking] = useState(false);
+    const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
+    const [isAiDisabled, setIsAiDisabled] = useState(false);
+
+    useEffect(() => {
+        if (isOpen && !process.env.API_KEY) {
+            setIsAiDisabled(true);
+        }
+    }, [isOpen]);
+
+
     useEffect(() => {
         if (!isOpen) {
             setTimeout(() => {
                 setOrderType('內用');
                 setValidationError(null);
+                setAiSuggestion(null);
             }, 300);
         }
     }, [isOpen]);
@@ -131,9 +164,45 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, cartItems, onUpdateQuantit
     };
 
     const totalPrice = useMemo(() => cartItems.reduce((total, item) => total + item.totalPrice, 0), [cartItems]);
+    
+    const handleAiCheck = async () => {
+        if (isChecking || isAiDisabled || cartItems.length === 0) return;
+        setIsChecking(true);
+        setAiSuggestion(null);
+        setValidationError(null);
+
+        try {
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+            const simplifiedCart = cartItems.map(item => ({
+                餐點: item.item.name,
+                數量: item.quantity,
+                選項: [
+                    item.selectedDonenesses ? `熟度: ${Object.keys(item.selectedDonenesses).join(',')}` : null,
+                    item.selectedAddons && item.selectedAddons.length > 0 ? `加點: ${item.selectedAddons.map(a => a.name).join(',')}` : null,
+                ].filter(Boolean).join('; ')
+            }));
+
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: `這是我的購物車內容：${JSON.stringify(simplifiedCart)}。請檢查我的訂單並提供一兩個有用的建議。`,
+                config: {
+                    systemInstruction: `你是一位專業且友善的「無名牛排」點餐小幫手。你的任務是分析顧客的購物車，並根據常見搭配或可能的遺漏，提供簡短、友善且有幫助的建議，以提升顧客的用餐體驗。例如，建議為沒有飲料的套餐加點飲料，或推薦熱門的附加項目。請保持建議的建設性與禮貌，不要強迫推銷。回答請使用繁體中文，並以「小提醒：」開頭。`,
+                },
+            });
+
+            setAiSuggestion(response.text);
+
+        } catch (error) {
+            console.error("AI check failed:", error);
+            setValidationError("AI 檢查時發生錯誤，請稍後再試。");
+        } finally {
+            setIsChecking(false);
+        }
+    };
 
     const handleCheckout = () => {
         setValidationError(null);
+        setAiSuggestion(null);
         if (cartItems.length === 0) { setValidationError('您的購物車是空的'); return; }
         if (!customerInfo.name.trim()) { setValidationError('請填寫您的姓名'); return; }
         if (!customerInfo.phone.trim()) { setValidationError('請填寫您的電話'); return; }
@@ -161,7 +230,12 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, cartItems, onUpdateQuantit
                     handleCheckout={handleCheckout} 
                     isSubmitting={isSubmitting}
                     validationError={validationError} 
-                    setValidationError={setValidationError} 
+                    setValidationError={setValidationError}
+                    isChecking={isChecking}
+                    isAiDisabled={isAiDisabled}
+                    aiSuggestion={aiSuggestion}
+                    handleAiCheck={handleAiCheck}
+                    setAiSuggestion={setAiSuggestion}
                 />
             </div>
         </>

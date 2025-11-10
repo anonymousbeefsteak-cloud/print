@@ -63,6 +63,8 @@ const App: React.FC = () => {
     useEffect(() => {
         if (printContent) {
             const handleAfterPrint = () => {
+                // After printing, clear the content and reload the page.
+                setPrintContent(null);
                 window.location.reload();
             };
 
@@ -247,14 +249,12 @@ const App: React.FC = () => {
                     localStorage.setItem('steakhouse-orders', JSON.stringify(savedOrders.slice(0, 5)));
                 }
 
-                // Directly trigger printing. The page will reload on 'afterprint' event.
-                handlePrintRequest(<PrintableOrder order={orderData} orderId={result.orderId} />);
-                
-                // State cleanup before reload
+                // Clean up state and show confirmation modal
                 setLastOrderId(result.orderId);
                 setLastSuccessfulOrder(orderData);
                 setIsCartOpen(false);
                 setCart([]);
+                setIsConfirmationModalOpen(true);
 
             } else {
                 setNotification(`訂單提交失敗: ${result.message || '未知錯誤'}`);
@@ -326,7 +326,7 @@ const App: React.FC = () => {
 
                 <footer className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 text-center text-slate-500 text-sm">
                     <div className="border-t border-slate-200 pt-8 space-y-2">
-                        <p>＊店內最低消費為一份餐點</p>
+                        <p>＊店內最低消費為一份餐點($175)</p>
                         <p>＊不收服務費，用完餐請回收餐具</p>
                         <p>＊用餐限九十分鐘請勿飲酒</p>
                         <p>＊餐點內容以現場出餐為準，餐點現點現做請耐心等候</p>

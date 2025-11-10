@@ -103,8 +103,9 @@ const ItemModal: React.FC<ItemModalProps> = ({ selectedItem, editingItem, addons
     setter(prev => {
       const currentCount = prev[name] || 0;
       const newCount = Math.max(0, currentCount + change);
-      // FIX: Cast value to number to ensure correct arithmetic and type for totalCount.
-      const totalCount = Object.values({ ...prev, [name]: newCount }).reduce((a: number, b) => a + (Number(b) || 0), 0);
+      const tempState = { ...prev, [name]: newCount };
+      // FIX: Calculate total count using Object.keys to avoid type inference issues with Object.values.
+      const totalCount = Object.keys(tempState).reduce((sum, key) => sum + (tempState[key] || 0), 0);
       if (totalCount > limit) return prev;
       const newObject = { ...prev, [name]: newCount };
       if (newCount === 0) delete newObject[name];

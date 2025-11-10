@@ -73,6 +73,75 @@ const OrderDetailModal: React.FC<{ order: Order; onClose: () => void }> = ({ ord
   );
 };
 
+const SalesTrendChart: React.FC<{ data: SalesStatistics['salesTrend'] }> = ({ data }) => {
+    if (!data || data.length === 0) {
+        return <p className="text-sm text-slate-500 text-center py-8">沒有足夠的資料來顯示圖表。</p>;
+    }
+
+    const maxRevenue = Math.max(...data.map(d => d.revenue), 0);
+    const chartHeight = 150;
+    const barWidth = 40;
+    const barMargin = 15;
+    const svgWidth = data.length * (barWidth + barMargin);
+
+    const formatDate = (dateStr: string) => {
+        const date = new Date(dateStr);
+        // Add time zone offset to prevent date from shifting
+        const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+        const adjustedDate = new Date(date.getTime() + userTimezoneOffset);
+        return `${adjustedDate.getMonth() + 1}/${adjustedDate.getDate()}`;
+    };
+
+    return (
+        <div className="overflow-x-auto p-2 bg-slate-50 rounded-lg border">
+            <svg viewBox={`0 0 ${svgWidth} ${chartHeight + 30}`} className="min-w-full h-auto" aria-label="Sales trend bar chart">
+                <title>每日銷售趨勢圖</title>
+                {data.map((d, i) => {
+                    const barHeight = maxRevenue > 0 ? (d.revenue / maxRevenue) * chartHeight : 0;
+                    const x = i * (barWidth + barMargin);
+                    const y = chartHeight - barHeight;
+
+                    return (
+                        <g key={d.date} className="group" transform={`translate(${x}, 0)`} role="figure" aria-label={`日期: ${d.date}, 營收: $${d.revenue.toLocaleString()}`}>
+                            {/* Tooltip */}
+                            <text
+                                x={barWidth / 2}
+                                y={y - 5}
+                                textAnchor="middle"
+                                className="text-xs font-bold fill-slate-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                                role="tooltip"
+                            >
+                                ${d.revenue.toLocaleString()}
+                            </text>
+                            
+                            {/* Bar */}
+                            <rect
+                                x="0"
+                                y={y}
+                                width={barWidth}
+                                height={barHeight}
+                                className="fill-green-500 hover:fill-green-600 transition-colors rounded-t-sm"
+                                rx="2"
+                            />
+                            
+                            {/* Date Label */}
+                            <text
+                                x={barWidth / 2}
+                                y={chartHeight + 15}
+                                textAnchor="middle"
+                                className="text-xxs fill-slate-500"
+                            >
+                                {formatDate(d.date)}
+                            </text>
+                        </g>
+                    );
+                })}
+            </svg>
+        </div>
+    );
+};
+
+
 interface AdminDashboardProps {
     isOpen: boolean;
     onClose: () => void;
@@ -236,25 +305,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose,
                                     </div>
                                     <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow">
                                         <h3 className="font-bold text-lg mb-4 text-slate-700">熱門品項</h3>
-                                        <ul className="space-y-2 max-h-80 overflow-y-auto">
-                                            {stats.popularItems.map(item => (
-                                                <li key={item.name} className="flex flex-wrap justify-between items-center text-sm border-b pb-2">
-                                                    <span className="font-medium text-slate-800">{item.name}</span>
-                                                    <span className="font-semibold text-slate-600">售出 {item.quantity} 份 (營收 ${item.revenue.toLocaleString()})</span>
-                                                </li>
-                                            ))}
-                                        </ul>
+                                        <div className="overflow-y-auto max-h-96 pr-2">
+                                            <table className="w-full text-sm text-left">
+                                                <thead className="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0">
+                                                    <tr>
+                                                        <th scope="col" className="px-4 py-3">品項</th>
+                                                        <th scope="col" className="px-4 py-3 text-right">售出數量</th>
+                                                        <th scope="col" className="px-4 py-3 text-right">總營收</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {stats.popularItems.map(item => (
+                                                        <tr key={item.name} className="border-b hover:bg-slate-50">
+                                                            <td className="px-4 py-2 font-medium text-slate-800 whitespace-nowrap">{item.name}</td>
+                                                            <td className="px-4 py-2 text-right">{item.quantity} 份</td>
+                                                            <td className="px-4 py-2 text-right">${item.revenue.toLocaleString()}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
                                     <div className="bg-white p-6 rounded-lg shadow">
                                         <h3 className="font-bold text-lg mb-4 text-slate-700">銷售趨勢</h3>
-                                        <ul className="space-y-1 text-sm max-h-80 overflow-y-auto">
-                                            {stats.salesTrend.map(trend => (
-                                                <li key={trend.date} className="flex justify-between border-b pb-1">
-                                                    <span className="text-slate-600">{trend.date}</span>
-                                                    <span className="font-semibold text-slate-800">${trend.revenue.toLocaleString()}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
+                                        <SalesTrendChart data={stats.salesTrend} />
                                     </div>
                                 </div>
                             ) : (
