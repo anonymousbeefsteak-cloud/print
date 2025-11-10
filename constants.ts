@@ -29,6 +29,26 @@ export const MENU_DATA: MenuCategory[] = [
     ]
   },
   {
+    title: "單點品項",
+    items: [
+      { id: 'ac-1', name: '單點板腱 5oz', weight: '5oz', price: 200, description: "單點主餐", customizations: { doneness: true, notes: true }, isAvailable: true },
+      { id: 'ac-2', name: '單點上蓋 5oz', weight: '5oz', price: 200, description: "單點主餐", customizations: { doneness: true, notes: true }, isAvailable: true },
+      { id: 'ac-3', name: '單點雞腿 5oz', weight: '5oz', price: 120, description: "單點主餐", customizations: { notes: true }, isAvailable: true },
+      { id: 'ac-4', name: '單點煎魚 5oz', weight: '5oz', price: 120, description: "單點主餐", customizations: { notes: true }, isAvailable: true },
+      { id: 'ac-5', name: '單點鴨胸 5oz', weight: '5oz', price: 120, description: "單點主餐", customizations: { notes: true }, isAvailable: true },
+      { id: 'ac-6', name: '單點炸魚 5oz', weight: '5oz', price: 120, description: "單點主餐", customizations: { notes: true }, isAvailable: true },
+      { id: 'ac-7', name: '單點豬排 5oz', weight: '5oz', price: 120, description: "單點主餐", customizations: { notes: true }, isAvailable: true },
+      { id: 'ac-8', name: '單點日豬 5oz', weight: '5oz', price: 120, description: "單點主餐", customizations: { notes: true }, isAvailable: true },
+      { id: 'ac-9', name: '單點義大利麵', price: 150, description: "任選主食與醬料", customizations: { pastaChoice: true, notes: true }, isAvailable: true },
+      { id: 'ac-10', name: '單點湯品', price: 30, description: "是日例湯", customizations: { notes: true }, isAvailable: true },
+      { id: 'ac-11', name: '單點粥品', price: 60, description: "單點", customizations: { notes: true }, isAvailable: true },
+      { id: 'ac-12', name: '單點脆薯', price: 60, description: "單點", customizations: { notes: true }, isAvailable: true },
+      { id: 'ac-13', name: '單點是日甜品', price: 60, description: "單點", customizations: { notes: true }, isAvailable: true },
+      { id: 'ac-14', name: '單點飲料', price: 20, description: "任選一款", customizations: { drinkChoice: true, notes: true }, isAvailable: true },
+      { id: 'ac-15', name: '單點蒜法', price: 60, description: "單點", customizations: { notes: true }, isAvailable: true },
+    ]
+  },
+  {
     title: "漢堡套餐",
     items: [
       { id: 'fried-chicken-set-golden', name: '黃金脆皮炸雞塊套餐', price: 175, description: "附:①日湯②主餐③脆薯④甜品⑤飲料", customizations: { drinkChoice: true, notes: true }, isAvailable: true },
