@@ -35,8 +35,8 @@ const App: React.FC = () => {
     const [notification, setNotification] = useState<string | null>(null);
 
     const promoSlides = [
-        'https://i.imgur.com/2s42mBi.png',
-        'https://i.imgur.com/dAvJc2T.png'
+        'https://raw.githubusercontent.com/anonymousbeefsteak-cloud/print/main/bic2.jpg',
+        'https://raw.githubusercontent.com/anonymousbeefsteak-cloud/print/main/bic.jpg'
     ];
 
     const fetchData = useCallback(async () => {
