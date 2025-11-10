@@ -276,40 +276,39 @@ const ItemModal: React.FC<ItemModalProps> = ({ selectedItem, editingItem, addons
   );
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-        <header className="p-5 relative border-b">
+    <div className="fixed inset-0 bg-white z-50 flex flex-col">
+        <header className="p-5 relative border-b bg-white shadow-sm flex-shrink-0">
           <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-800"><CloseIcon /></button>
           <h2 className="text-2xl font-bold text-slate-800">{item.name.replace(/半全餐|半套餐/g, '套餐')}</h2>
-          <p className="text-slate-500">{item.description}</p>
+          <p className="text-slate-500 mt-1">{item.description}</p>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-slate-50 p-6 space-y-6">
-          {custom.doneness && <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">選擇熟度 <span className="text-sm font-normal text-slate-500">(已選 {donenessCount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 gap-3">{DONENESS_LEVELS.map(level => renderSimpleCounter(level, selectedDonenesses[level] || 0, () => handleOptionChange(setSelectedDonenesses as any, level, 1, quantity), () => handleOptionChange(setSelectedDonenesses as any, level, -1, quantity)))}</div></div>}
+        <main className="flex-1 overflow-y-auto bg-slate-50 p-4 sm:p-6 space-y-6">
+          {custom.doneness && <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">選擇熟度 <span className="text-sm font-normal text-slate-500">(已選 {donenessCount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{DONENESS_LEVELS.map(level => renderSimpleCounter(level, selectedDonenesses[level] || 0, () => handleOptionChange(setSelectedDonenesses as any, level, 1, quantity), () => handleOptionChange(setSelectedDonenesses as any, level, -1, quantity)))}</div></div>}
           
-          {custom.sauceChoice && <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">選擇醬料 <span className="text-sm font-normal text-slate-500">(已選 {sauceCount} / 共需選 {sauceLimit} 份)</span></h3><div className="grid grid-cols-2 gap-3">{options.sauces.map(sauce => renderChoiceCounter(sauce, selectedSauces.find(s => s.name === sauce.name)?.quantity || 0, () => { if(sauce.isAvailable) handleArrayOfObjectsChange(setSelectedSauces, sauce.name, 1, sauceLimit) }, () => handleArrayOfObjectsChange(setSelectedSauces, sauce.name, -1, sauceLimit)))}</div></div>}
+          {custom.sauceChoice && <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">選擇醬料 <span className="text-sm font-normal text-slate-500">(已選 {sauceCount} / 共需選 {sauceLimit} 份)</span></h3><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{options.sauces.map(sauce => renderChoiceCounter(sauce, selectedSauces.find(s => s.name === sauce.name)?.quantity || 0, () => { if(sauce.isAvailable) handleArrayOfObjectsChange(setSelectedSauces, sauce.name, 1, sauceLimit) }, () => handleArrayOfObjectsChange(setSelectedSauces, sauce.name, -1, sauceLimit)))}</div></div>}
 
-          {custom.drinkChoice && <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">選擇飲料 <span className="text-sm font-normal text-slate-500">(已選 {drinkCount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 gap-3">{DRINK_CHOICES.map(drink => renderSimpleCounter(drink, selectedDrinks[drink] || 0, () => handleOptionChange(setSelectedDrinks, drink, 1, quantity), () => handleOptionChange(setSelectedDrinks, drink, -1, quantity)))}</div></div>}
+          {custom.drinkChoice && <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">選擇飲料 <span className="text-sm font-normal text-slate-500">(已選 {drinkCount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{DRINK_CHOICES.map(drink => renderSimpleCounter(drink, selectedDrinks[drink] || 0, () => handleOptionChange(setSelectedDrinks, drink, 1, quantity), () => handleOptionChange(setSelectedDrinks, drink, -1, quantity)))}</div></div>}
           
-          {custom.componentChoice && <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">{custom.componentChoice.title} <span className="text-sm font-normal text-slate-500">(已選 {componentCount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 gap-3">{custom.componentChoice.options.map(c => renderSimpleCounter(c, selectedComponent[c] || 0, () => handleOptionChange(setSelectedComponent, c, 1, quantity), () => handleOptionChange(setSelectedComponent, c, -1, quantity)))}</div></div>}
+          {custom.componentChoice && <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">{custom.componentChoice.title} <span className="text-sm font-normal text-slate-500">(已選 {componentCount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{custom.componentChoice.options.map(c => renderSimpleCounter(c, selectedComponent[c] || 0, () => handleOptionChange(setSelectedComponent, c, 1, quantity), () => handleOptionChange(setSelectedComponent, c, -1, quantity)))}</div></div>}
 
-          {custom.sideChoice && <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">{custom.sideChoice.title} <span className="text-sm font-normal text-slate-500">(已選 {sideChoiceCount} / 共需選 {sideChoiceLimit} 份)</span></h3><div className="grid grid-cols-2 gap-3">{custom.sideChoice.options.map(s => renderSimpleCounter(s, selectedSideChoices[s] || 0, () => handleOptionChange(setSelectedSideChoices, s, 1, sideChoiceLimit), () => handleOptionChange(setSelectedSideChoices, s, -1, sideChoiceLimit)))}</div></div>}
+          {custom.sideChoice && <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">{custom.sideChoice.title} <span className="text-sm font-normal text-slate-500">(已選 {sideChoiceCount} / 共需選 {sideChoiceLimit} 份)</span></h3><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{custom.sideChoice.options.map(s => renderSimpleCounter(s, selectedSideChoices[s] || 0, () => handleOptionChange(setSelectedSideChoices, s, 1, sideChoiceLimit), () => handleOptionChange(setSelectedSideChoices, s, -1, sideChoiceLimit)))}</div></div>}
           
-          {custom.multiChoice && <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">{custom.multiChoice.title} <span className="text-sm font-normal text-slate-500">(已選 {multiChoiceCount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 gap-3">{options.coldNoodles.map(choice => renderChoiceCounter( choice, selectedMultiChoice[choice.name] || 0, () => { if (choice.isAvailable) handleOptionChange(setSelectedMultiChoice, choice.name, 1, quantity); }, () => handleOptionChange(setSelectedMultiChoice, choice.name, -1, quantity) ))}</div></div>}
+          {custom.multiChoice && <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">{custom.multiChoice.title} <span className="text-sm font-normal text-slate-500">(已選 {multiChoiceCount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{options.coldNoodles.map(choice => renderChoiceCounter( choice, selectedMultiChoice[choice.name] || 0, () => { if (choice.isAvailable) handleOptionChange(setSelectedMultiChoice, choice.name, 1, quantity); }, () => handleOptionChange(setSelectedMultiChoice, choice.name, -1, quantity) ))}</div></div>}
 
           {custom.dessertChoice && <>
-            <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">選擇甜品 (A區) <span className="text-sm font-normal text-slate-500">(已選 {dessertACount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 gap-3">{options.dessertsA.map(dessert => renderChoiceCounter(dessert, selectedDesserts.find(s => s.name === dessert.name)?.quantity || 0, () => { if (dessert.isAvailable) handleArrayOfObjectsChange(setSelectedDesserts, dessert.name, 1, quantity, options.dessertsA.map(d=>d.name)) }, () => handleArrayOfObjectsChange(setSelectedDesserts, dessert.name, -1, quantity, options.dessertsA.map(d=>d.name)) ))}</div></div>
-            <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">選擇甜品 (B區) <span className="text-sm font-normal text-slate-500">(已選 {dessertBCount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 gap-3">{options.dessertsB.map(dessert => renderChoiceCounter(dessert, selectedDesserts.find(s => s.name === dessert.name)?.quantity || 0, () => { if (dessert.isAvailable) handleArrayOfObjectsChange(setSelectedDesserts, dessert.name, 1, quantity, options.dessertsB.map(d=>d.name)) }, () => handleArrayOfObjectsChange(setSelectedDesserts, dessert.name, -1, quantity, options.dessertsB.map(d=>d.name)) ))}</div></div>
+            <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">選擇甜品 (A區) <span className="text-sm font-normal text-slate-500">(已選 {dessertACount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{options.dessertsA.map(dessert => renderChoiceCounter(dessert, selectedDesserts.find(s => s.name === dessert.name)?.quantity || 0, () => { if (dessert.isAvailable) handleArrayOfObjectsChange(setSelectedDesserts, dessert.name, 1, quantity, options.dessertsA.map(d=>d.name)) }, () => handleArrayOfObjectsChange(setSelectedDesserts, dessert.name, -1, quantity, options.dessertsA.map(d=>d.name)) ))}</div></div>
+            <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">選擇甜品 (B區) <span className="text-sm font-normal text-slate-500">(已選 {dessertBCount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{options.dessertsB.map(dessert => renderChoiceCounter(dessert, selectedDesserts.find(s => s.name === dessert.name)?.quantity || 0, () => { if (dessert.isAvailable) handleArrayOfObjectsChange(setSelectedDesserts, dessert.name, 1, quantity, options.dessertsB.map(d=>d.name)) }, () => handleArrayOfObjectsChange(setSelectedDesserts, dessert.name, -1, quantity, options.dessertsB.map(d=>d.name)) ))}</div></div>
           </>}
 
           {custom.pastaChoice && <>
-            <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">選擇義大利麵主食 (A區) <span className="text-sm font-normal text-slate-500">(已選 {pastaACount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 gap-3">{options.pastasA.map(pasta => renderChoiceCounter(pasta, selectedPastas.find(s => s.name === pasta.name)?.quantity || 0, () => { if (pasta.isAvailable) handleArrayOfObjectsChange(setSelectedPastas, pasta.name, 1, quantity, options.pastasA.map(p=>p.name)) }, () => handleArrayOfObjectsChange(setSelectedPastas, pasta.name, -1, quantity, options.pastasA.map(p=>p.name)) ))}</div></div>
-            <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">選擇義大利麵醬料 (B區) <span className="text-sm font-normal text-slate-500">(已選 {pastaBCount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 gap-3">{options.pastasB.map(pasta => renderChoiceCounter(pasta, selectedPastas.find(s => s.name === pasta.name)?.quantity || 0, () => { if (pasta.isAvailable) handleArrayOfObjectsChange(setSelectedPastas, pasta.name, 1, quantity, options.pastasB.map(p=>p.name)) }, () => handleArrayOfObjectsChange(setSelectedPastas, pasta.name, -1, quantity, options.pastasB.map(p=>p.name)) ))}</div></div>
+            <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">選擇義大利麵主食 (A區) <span className="text-sm font-normal text-slate-500">(已選 {pastaACount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{options.pastasA.map(pasta => renderChoiceCounter(pasta, selectedPastas.find(s => s.name === pasta.name)?.quantity || 0, () => { if (pasta.isAvailable) handleArrayOfObjectsChange(setSelectedPastas, pasta.name, 1, quantity, options.pastasA.map(p=>p.name)) }, () => handleArrayOfObjectsChange(setSelectedPastas, pasta.name, -1, quantity, options.pastasA.map(p=>p.name)) ))}</div></div>
+            <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">選擇義大利麵醬料 (B區) <span className="text-sm font-normal text-slate-500">(已選 {pastaBCount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{options.pastasB.map(pasta => renderChoiceCounter(pasta, selectedPastas.find(s => s.name === pasta.name)?.quantity || 0, () => { if (pasta.isAvailable) handleArrayOfObjectsChange(setSelectedPastas, pasta.name, 1, quantity, options.pastasB.map(p=>p.name)) }, () => handleArrayOfObjectsChange(setSelectedPastas, pasta.name, -1, quantity, options.pastasB.map(p=>p.name)) ))}</div></div>
           </>}
 
           {allAddons.filter(a => a.isAvailable).length > 0 && <div className="p-4 bg-slate-100 rounded-lg">
             <h3 className="font-semibold text-slate-700 mb-3">其他加購</h3>
-            <div className="grid grid-cols-2 gap-3">{allAddons.filter(a => a.isAvailable).map(addon => renderSimpleCounter(`${addon.name} (+$${addon.price})`, selectedAddons.find(a => a.id === addon.id)?.quantity || 0, () => handleAddonChange(addon, 1), () => handleAddonChange(addon, -1)))}</div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{allAddons.filter(a => a.isAvailable).map(addon => renderSimpleCounter(`${addon.name} (+$${addon.price})`, selectedAddons.find(a => a.id === addon.id)?.quantity || 0, () => handleAddonChange(addon, 1), () => handleAddonChange(addon, -1)))}</div>
           </div>}
 
           {custom.notes && <div className="p-4 bg-slate-100 rounded-lg">
@@ -318,20 +317,19 @@ const ItemModal: React.FC<ItemModalProps> = ({ selectedItem, editingItem, addons
           </div>}
         </main>
 
-        <footer className="p-5 border-t bg-slate-50">
-          <div className="flex justify-between items-center gap-4">
+        <footer className="p-5 border-t bg-slate-50 flex-shrink-0">
+          <div className="max-w-4xl mx-auto flex justify-between items-center gap-4">
             <div className="flex items-center gap-3">
               <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-2 rounded-full bg-slate-200 hover:bg-slate-300"><MinusIcon /></button>
               <span className="font-bold text-xl w-10 text-center">{quantity}</span>
               <button onClick={() => setQuantity(quantity + 1)} className="p-2 rounded-full bg-slate-200 hover:bg-slate-300"><PlusIcon /></button>
             </div>
             {validationError && <p className="text-red-500 text-sm font-semibold flex-1 text-center">{validationError}</p>}
-            <button onClick={handleConfirm} className="bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap">
+            <button onClick={handleConfirm} className="bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap text-lg">
               {editingItem ? `更新餐點 - $${totalPrice}` : `加入購物車 - $${totalPrice}`}
             </button>
           </div>
         </footer>
-      </div>
     </div>
   );
 };
