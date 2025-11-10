@@ -9,6 +9,7 @@ import OrderQueryModal from './components/OrderQueryModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import WelcomeModal from './components/WelcomeModal';
 import AIAssistantModal from './components/AIAssistantModal';
+import Carousel from './components/Carousel';
 import { CartIcon, RefreshIcon, SearchIcon, SparklesIcon } from './components/icons';
 import { PrintableOrder } from './components/PrintableOrder';
 
@@ -32,6 +33,11 @@ const App: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [notification, setNotification] = useState<string | null>(null);
+
+    const promoSlides = [
+        'https://i.imgur.com/2s42mBi.png',
+        'https://i.imgur.com/dAvJc2T.png'
+    ];
 
     const fetchData = useCallback(async () => {
         setNotification(null);
@@ -293,6 +299,7 @@ const App: React.FC = () => {
                 </header>
 
                 <main className="container mx-auto p-4 md:p-6 lg:p-8">
+                    <Carousel slides={promoSlides} />
                     <Menu menuData={menuData} onSelectItem={handleSelectItem} />
                 </main>
 
