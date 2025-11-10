@@ -1,6 +1,8 @@
+
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { apiService } from '../services/apiService';
-import type { MenuCategory, Addon, OptionsData } from '../types';
+import type { MenuCategory, Addon, OptionsData, Option } from '../types';
 
 const ToggleSwitch: React.FC<{
   enabled: boolean;
@@ -25,10 +27,10 @@ const ToggleSwitch: React.FC<{
 
 interface AvailabilityManagerProps {
     isOpen: boolean;
-    onAvailabilityUpdate: () => void;
+    onStoreUpdate: () => void;
 }
 
-const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ isOpen, onAvailabilityUpdate }) => {
+const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ isOpen, onStoreUpdate }) => {
   const [initialMenu, setInitialMenu] = useState<MenuCategory[]>([]);
   const [initialAddons, setInitialAddons] = useState<Addon[]>([]);
   const [initialOptions, setInitialOptions] = useState<OptionsData | null>(null);
@@ -39,6 +41,9 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ isOpen, onAva
     options: Partial<Record<keyof OptionsData, Record<string, boolean>>>;
   }>({ menu: {}, addons: {}, options: {} });
 
+  const [isQuietHours, setIsQuietHours] = useState(false);
+  const [isQuietHoursSaving, setIsQuietHoursSaving] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,18 +53,18 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ isOpen, onAva
     setIsLoading(true);
     setError(null);
     try {
-      const { menu, addons, options } = await apiService.getMenuAndAddons();
+      const { menu, addons, options, isQuietHours: quietHoursStatus } = await apiService.getMenuAndAddons();
       setInitialMenu(menu);
       setInitialAddons(addons);
       setInitialOptions(options);
+      setIsQuietHours(quietHoursStatus);
 
       const menuAvail = Object.fromEntries(menu.flatMap(cat => cat.items.map(item => [item.id, item.isAvailable])));
       const addonAvail = Object.fromEntries(addons.map(addon => [addon.id, addon.isAvailable]));
       const optionsAvail = Object.fromEntries(
           Object.entries(options).map(([key, val]) => [
               key,
-              // FIX: Cast `val` to any[] to resolve 'unknown' type error on .map()
-              Object.fromEntries((val as any[]).map(opt => [opt.name, opt.isAvailable]))
+              Object.fromEntries((val as Option[]).map(opt => [opt.name, opt.isAvailable]))
           ])
       );
       
@@ -82,7 +87,7 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ isOpen, onAva
       const optionsAvail = initialOptions ? Object.fromEntries(
           Object.entries(initialOptions).map(([key, val]) => [
               key,
-              Object.fromEntries((val as any[]).map(opt => [opt.name, opt.isAvailable]))
+              Object.fromEntries((val as Option[]).map(opt => [opt.name, opt.isAvailable]))
           ])
       ) : {};
       return { menu: menuAvail, addons: addonAvail, options: optionsAvail };
@@ -123,13 +128,28 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ isOpen, onAva
       const result = await apiService.updateAvailability(availability);
       if(result.success) {
           setSuccessMessage('供應狀態已成功儲存！');
-          onAvailabilityUpdate(); // Signal parent to refetch
-          await fetchData(); // Also refetch local state to update the "initial" state for hasChanges logic
+          onStoreUpdate();
+          await fetchData();
       } else {
           setError(result.message || '儲存失敗，請重試。');
       }
       setIsSaving(false);
   }
+
+  const handleQuietHoursToggle = async (newStatus: boolean) => {
+    setIsQuietHoursSaving(true);
+    setError(null);
+    setSuccessMessage(null);
+    const result = await apiService.updateQuietHoursStatus(newStatus);
+    if (result.success) {
+        setIsQuietHours(newStatus);
+        setSuccessMessage(`營業狀態已更新為「${newStatus ? '休息中' : '營業中'}」。`);
+        onStoreUpdate();
+    } else {
+        setError(result.message || '狀態更新失敗');
+    }
+    setIsQuietHoursSaving(false);
+  };
 
   const addonGroups = useMemo(() => {
     return initialAddons.reduce((acc, addon) => {
@@ -152,6 +172,21 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ isOpen, onAva
 
   return (
     <div className="space-y-8">
+      <div className="bg-white p-4 rounded-lg shadow-sm">
+        <h3 className="text-lg font-bold text-slate-700 border-b pb-2 mb-4">營業狀態</h3>
+        <div className="flex justify-between items-center bg-slate-50 p-3 rounded-md">
+            <span className="text-sm font-medium text-slate-800">店家休息中 (啟用後將暫停點餐)</span>
+            <div className="flex items-center gap-2">
+                {isQuietHoursSaving && <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-slate-500"></div>}
+                <ToggleSwitch
+                    enabled={isQuietHours}
+                    onChange={handleQuietHoursToggle}
+                    label={`quiet-hours-toggle`}
+                />
+            </div>
+        </div>
+      </div>
+
       {initialMenu.map(category => (
         <div key={category.title} className="bg-white p-4 rounded-lg shadow-sm">
           <h3 className="text-lg font-bold text-slate-700 border-b pb-2 mb-4">{category.title}</h3>
@@ -188,13 +223,16 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ isOpen, onAva
         </div>
       ))}
       
-      {initialOptions && optionSections.map(section => (
-        (initialOptions[section.key] && (initialOptions[section.key] as any[]).length > 0) && (
+      {/* FIX: Use Array.isArray to safely check and map over option arrays. */}
+      {initialOptions && optionSections.map(section => {
+        const optionsArray = initialOptions[section.key];
+        if (!Array.isArray(optionsArray) || optionsArray.length === 0) return null;
+        
+        return (
             <div key={section.key} className="bg-white p-4 rounded-lg shadow-sm">
                 <h3 className="text-lg font-bold text-slate-700 border-b pb-2 mb-4">{section.title}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {/* FIX: Cast to any[] to resolve 'unknown' type error on .map() */}
-                    {(initialOptions[section.key] as any[]).map(option => (
+                    {optionsArray.map(option => (
                         <div key={option.name} className="flex justify-between items-center bg-slate-50 p-3 rounded-md">
                             <span className="text-sm font-medium text-slate-800">{option.name}</span>
                             <ToggleSwitch
@@ -206,8 +244,8 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ isOpen, onAva
                     ))}
                 </div>
             </div>
-        )
-      ))}
+        );
+      })}
 
       <div className="sticky bottom-0 bg-white/80 backdrop-blur-sm p-4 rounded-t-lg shadow-lg -mx-6 -mb-6 mt-8">
         {successMessage && <div className="text-green-600 bg-green-100 p-3 rounded-md text-center mb-3">{successMessage}</div>}

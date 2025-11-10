@@ -1,3 +1,5 @@
+
+
 import React, { useMemo } from 'react';
 import type { Order, CartItem, OrderData } from '../types';
 
@@ -62,14 +64,16 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
                 existingMeal.lineTotalPrice += item.item.price * item.quantity;
                 if (item.selectedDonenesses) {
                     for (const [level, count] of Object.entries(item.selectedDonenesses)) {
-                        existingMeal.donenesses.set(level, (existingMeal.donenesses.get(level) || 0) + count);
+                        // FIX: Explicitly convert count to a number to prevent operating on 'unknown'.
+                        existingMeal.donenesses.set(level, (existingMeal.donenesses.get(level) || 0) + (Number(count) || 0));
                     }
                 }
             } else {
                 const donenessMap = new Map<string, number>();
                 if (item.selectedDonenesses) {
                     for (const [level, count] of Object.entries(item.selectedDonenesses)) {
-                        donenessMap.set(level, count);
+                        // FIX: Explicitly convert count to a number to ensure it's assignable to a Map of numbers.
+                        donenessMap.set(level, Number(count) || 0);
                     }
                 }
                 meals.set(key, {
@@ -103,7 +107,7 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
             Array.from(map.entries()).map(([name, quantity]) => `${name} x${quantity}`).join(', ');
 
         const formatAddonsMap = (map: Map<string, { quantity: number; price: number }>) =>
-            Array.from(map.entries()).map(([name, data]) => `${name} x${data.quantity}($${data.price * data.quantity})`).join(', ');
+            Array.from(map.entries()).map(([name, data]) => `${name} ($${data.price}) x${data.quantity} ($${data.price * data.quantity})`).join(', ');
 
         return {
             sauces: formatMap(sauces),
@@ -134,7 +138,7 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
     return (
         <div style={{ width: '58mm', padding: '0', backgroundColor: 'white', color: 'black', fontFamily: 'monospace', fontSize: '28px', lineHeight: 1 }}>
             <p style={pStyle}>
-                單號: {finalOrderId?.slice(-6) || 'xxx'} 類型: {order.orderType} 共計${order.totalPrice}
+                {`訂單號: ${finalOrderId?.slice(-6) || 'xxx'} \u00A0 類型: ${order.orderType} \u00A0 共計$${order.totalPrice}`}
             </p>
             
             {mainMealLines.length > 0 && (

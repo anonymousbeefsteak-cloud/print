@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useMemo } from 'react';
 import type {
   MenuItem,
@@ -72,6 +74,24 @@ const ItemModal: React.FC<ItemModalProps> = ({ selectedItem, editingItem, addons
     }
   }, [editingItem]);
 
+  const handleDonenessChange = (level: DonenessLevel, change: number) => {
+    setValidationError(null);
+    setSelectedDonenesses(prev => {
+        const currentCount = prev[level] || 0;
+        const newCount = Math.max(0, currentCount + change);
+        // FIX: Explicitly type accumulator and cast value to number to avoid operating on 'unknown'.
+        const totalCount = Object.values({ ...prev, [level]: newCount }).reduce((sum: number, count) => sum + (Number(count) || 0), 0);
+        if (totalCount > quantity) {
+            return prev;
+        }
+        const newObject = { ...prev, [level]: newCount };
+        if (newCount === 0) {
+            delete newObject[level];
+        }
+        return newObject;
+    });
+  };
+
   // Generic handler for simple key-value pair options
   const handleOptionChange = (
     setter: React.Dispatch<React.SetStateAction<{ [key: string]: number }>>,
@@ -83,8 +103,8 @@ const ItemModal: React.FC<ItemModalProps> = ({ selectedItem, editingItem, addons
     setter(prev => {
       const currentCount = prev[name] || 0;
       const newCount = Math.max(0, currentCount + change);
-      // FIX: Add explicit types to reduce function to resolve 'unknown' type errors.
-      const totalCount = Object.values({ ...prev, [name]: newCount }).reduce((a: number, b: number) => a + b, 0);
+      // FIX: Cast value to number to ensure correct arithmetic and type for totalCount.
+      const totalCount = Object.values({ ...prev, [name]: newCount }).reduce((a: number, b) => a + (Number(b) || 0), 0);
       if (totalCount > limit) return prev;
       const newObject = { ...prev, [name]: newCount };
       if (newCount === 0) delete newObject[name];
@@ -103,7 +123,7 @@ const ItemModal: React.FC<ItemModalProps> = ({ selectedItem, editingItem, addons
     setValidationError(null);
     setter(prev => {
       const itemsToConsider = group ? prev.filter(item => group.includes(item.name)) : prev;
-      const totalCount = itemsToConsider.reduce((sum, item) => sum + item.quantity, 0);
+      const totalCount = itemsToConsider.reduce((sum: number, item) => sum + item.quantity, 0);
       const existingItem = prev.find(item => item.name === name);
       const newQuantity = (existingItem?.quantity || 0) + change;
 
@@ -138,19 +158,14 @@ const ItemModal: React.FC<ItemModalProps> = ({ selectedItem, editingItem, addons
   }, [item.price, quantity, selectedAddons, selectedSingleChoiceAddon, custom.singleChoiceAddon]);
 
   // Counts for UI display
-  // FIX: Add explicit types to reduce function to resolve 'unknown' type errors.
   const donenessCount = useMemo(() => Object.values(selectedDonenesses).reduce((a: number, b: number | undefined) => a + (b || 0), 0), [selectedDonenesses]);
   const sauceLimit = useMemo(() => (custom.saucesPerItem ? custom.saucesPerItem * quantity : quantity), [custom.saucesPerItem, quantity]);
   const sauceCount = useMemo(() => selectedSauces.reduce((sum, s) => sum + s.quantity, 0), [selectedSauces]);
-  // FIX: Add explicit types to reduce function to resolve 'unknown' type errors.
-  const drinkCount = useMemo(() => Object.values(selectedDrinks).reduce((a: number, b: number) => a + (b || 0), 0), [selectedDrinks]);
-  // FIX: Add explicit types to reduce function to resolve 'unknown' type errors.
-  const componentCount = useMemo(() => Object.values(selectedComponent).reduce((a: number, b: number) => a + (b || 0), 0), [selectedComponent]);
+  const drinkCount = useMemo(() => Object.values(selectedDrinks).reduce((a: number, b: number) => a + b, 0), [selectedDrinks]);
+  const componentCount = useMemo(() => Object.values(selectedComponent).reduce((a: number, b: number) => a + b, 0), [selectedComponent]);
   const sideChoiceLimit = useMemo(() => (custom.sideChoice ? custom.sideChoice.choices * quantity : 0), [custom.sideChoice, quantity]);
-  // FIX: Add explicit types to reduce function to resolve 'unknown' type errors.
-  const sideChoiceCount = useMemo(() => Object.values(selectedSideChoices).reduce((a: number, b: number) => a + (b || 0), 0), [selectedSideChoices]);
-  // FIX: Add explicit types to reduce function to resolve 'unknown' type errors.
-  const multiChoiceCount = useMemo(() => Object.values(selectedMultiChoice).reduce((a: number, b: number) => a + (b || 0), 0), [selectedMultiChoice]);
+  const sideChoiceCount = useMemo(() => Object.values(selectedSideChoices).reduce((a: number, b: number) => a + b, 0), [selectedSideChoices]);
+  const multiChoiceCount = useMemo(() => Object.values(selectedMultiChoice).reduce((a: number, b: number) => a + b, 0), [selectedMultiChoice]);
 
   const dessertACount = useMemo(() => {
       if (!custom.dessertChoice) return 0;
@@ -284,7 +299,7 @@ const ItemModal: React.FC<ItemModalProps> = ({ selectedItem, editingItem, addons
         </header>
 
         <main className="flex-1 overflow-y-auto bg-slate-50 p-4 sm:p-6 space-y-6">
-          {custom.doneness && <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">選擇熟度 <span className="text-sm font-normal text-slate-500">(已選 {donenessCount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{DONENESS_LEVELS.map(level => renderSimpleCounter(level, selectedDonenesses[level] || 0, () => handleOptionChange(setSelectedDonenesses as any, level, 1, quantity), () => handleOptionChange(setSelectedDonenesses as any, level, -1, quantity)))}</div></div>}
+          {custom.doneness && <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">選擇熟度 <span className="text-sm font-normal text-slate-500">(已選 {donenessCount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{DONENESS_LEVELS.map(level => renderSimpleCounter(level, selectedDonenesses[level] || 0, () => handleDonenessChange(level, 1), () => handleDonenessChange(level, -1)))}</div></div>}
           
           {custom.sauceChoice && <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">選擇醬料 <span className="text-sm font-normal text-slate-500">(已選 {sauceCount} / 共需選 {sauceLimit} 份)</span></h3><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{options.sauces.map(sauce => renderChoiceCounter(sauce, selectedSauces.find(s => s.name === sauce.name)?.quantity || 0, () => { if(sauce.isAvailable) handleArrayOfObjectsChange(setSelectedSauces, sauce.name, 1, sauceLimit) }, () => handleArrayOfObjectsChange(setSelectedSauces, sauce.name, -1, sauceLimit)))}</div></div>}
 

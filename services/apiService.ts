@@ -14,7 +14,7 @@ const generateFallbackOptions = (): OptionsData => ({
 
 
 const apiService = {
-  async getMenuAndAddons(): Promise<{ menu: MenuCategory[], addons: Addon[], options: OptionsData, from: 'api' | 'fallback' }> {
+  async getMenuAndAddons(): Promise<{ menu: MenuCategory[], addons: Addon[], options: OptionsData, from: 'api' | 'fallback', isQuietHours: boolean }> {
     try {
       const response = await fetch(`${API_URL}?action=getMenu`);
       if (!response.ok) throw new Error('Network response was not ok');
@@ -31,10 +31,10 @@ const apiService = {
           coldNoodles: data.options.coldNoodles?.length > 0 ? data.options.coldNoodles : fallbackOptions.coldNoodles,
       };
 
-      return { ...data, options: finalOptions, from: 'api' };
+      return { ...data, options: finalOptions, from: 'api', isQuietHours: data.isQuietHours || false };
     } catch (error) {
       console.warn("API fetch failed, using fallback.", error);
-      return { menu: MENU_DATA, addons: ADDONS, options: generateFallbackOptions(), from: 'fallback' };
+      return { menu: MENU_DATA, addons: ADDONS, options: generateFallbackOptions(), from: 'fallback', isQuietHours: false };
     }
   },
 
@@ -159,6 +159,26 @@ const apiService = {
       return await response.json();
     } catch (error) {
       console.error("Failed to update availability:", error);
+      const message = error instanceof Error ? error.message : "An unknown error occurred.";
+      return { success: false, message };
+    }
+  },
+  
+  async updateQuietHoursStatus(status: boolean): Promise<{ success: boolean; message?: string }> {
+    try {
+      const payload = { action: 'updateQuietHoursStatus', status };
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Server responded with ${response.status}: ${errorText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("Failed to update quiet hours status:", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred.";
       return { success: false, message };
     }

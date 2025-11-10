@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useMemo } from 'react';
 import type { CartItem, CustomerInfo, OrderData, OrderType, SelectedSauce } from '../types';
 import { CloseIcon, CartIcon, MinusIcon, PlusIcon, TrashIcon } from './icons';
@@ -30,19 +32,16 @@ const CartMainView: React.FC<CartMainViewProps> = ({ onClose, cartItems, onUpdat
         const sideChoices: { [key: string]: number } = {};
         const addons: { [key: string]: { quantity: number; price: number; } } = {};
         cartItems.forEach(cartItem => {
-            // FIX: Explicitly cast quantity to Number to prevent type errors from implicit 'any' types.
+            // FIX: Explicitly convert quantity to a number to prevent operating on 'unknown'.
             if (cartItem.selectedDrinks) Object.entries(cartItem.selectedDrinks).forEach(([name, quantity]) => drinks[name] = (drinks[name] || 0) + Number(quantity));
-            // FIX: Explicitly cast quantity to Number to prevent type errors from implicit 'any' types.
-            if (cartItem.selectedSauces) (cartItem.selectedSauces as SelectedSauce[]).forEach(sauce => sauces[sauce.name] = (sauces[sauce.name] || 0) + Number(sauce.quantity));
-            // FIX: Explicitly cast quantity to Number to prevent type errors from implicit 'any' types.
-            if (cartItem.selectedDesserts) cartItem.selectedDesserts.forEach(dessert => desserts[dessert.name] = (desserts[dessert.name] || 0) + Number(dessert.quantity));
-            // FIX: Explicitly cast quantity to Number to prevent type errors from implicit 'any' types.
-            if (cartItem.selectedPastas) cartItem.selectedPastas.forEach(pasta => pastas[pasta.name] = (pastas[pasta.name] || 0) + Number(pasta.quantity));
-            // FIX: Explicitly cast quantity to Number to prevent type errors from implicit 'any' types.
+            if (cartItem.selectedSauces) (cartItem.selectedSauces as SelectedSauce[]).forEach(sauce => sauces[sauce.name] = (sauces[sauce.name] || 0) + sauce.quantity);
+            if (cartItem.selectedDesserts) cartItem.selectedDesserts.forEach(dessert => desserts[dessert.name] = (desserts[dessert.name] || 0) + dessert.quantity);
+            if (cartItem.selectedPastas) cartItem.selectedPastas.forEach(pasta => pastas[pasta.name] = (pastas[pasta.name] || 0) + pasta.quantity);
+            // FIX: Explicitly convert quantity to a number to prevent operating on 'unknown'.
             if (cartItem.selectedComponent) Object.entries(cartItem.selectedComponent).forEach(([name, quantity]) => components[name] = (components[name] || 0) + Number(quantity));
+            // FIX: Explicitly convert quantity to a number to prevent operating on 'unknown'.
             if (cartItem.selectedSideChoices) Object.entries(cartItem.selectedSideChoices).forEach(([name, quantity]) => sideChoices[name] = (sideChoices[name] || 0) + Number(quantity));
-            // FIX: Explicitly cast quantity to Number to prevent type errors from implicit 'any' types.
-            if (cartItem.selectedAddons) cartItem.selectedAddons.forEach(addon => addons[addon.name] = { quantity: (addons[addon.name]?.quantity || 0) + Number(addon.quantity), price: addon.price });
+            if (cartItem.selectedAddons) cartItem.selectedAddons.forEach(addon => addons[addon.name] = { quantity: (addons[addon.name]?.quantity || 0) + addon.quantity, price: addon.price });
         });
         return { drinks, sauces, addons, desserts, pastas, components, sideChoices };
     }, [cartItems]);
@@ -81,7 +80,7 @@ const CartMainView: React.FC<CartMainViewProps> = ({ onClose, cartItems, onUpdat
                         </div>
                     )}
                     <button onClick={handleCheckout} disabled={isSubmitting} className="w-full bg-green-600 text-white font-bold py-4 px-4 rounded-lg hover:bg-green-700 transition-colors text-lg flex justify-center items-center disabled:bg-slate-400 disabled:cursor-not-allowed">
-                        {isSubmitting ? '處理中...' : '送出訂單並列印'}
+                        {isSubmitting ? '處理中...' : '送出訂單'}
                     </button>
                 </div>
             </>)}

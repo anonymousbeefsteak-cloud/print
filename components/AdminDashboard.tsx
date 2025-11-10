@@ -77,10 +77,10 @@ interface AdminDashboardProps {
     isOpen: boolean;
     onClose: () => void;
     onPrintRequest: (content: React.ReactNode) => void;
-    onAvailabilityUpdate: () => void;
+    onStoreUpdate: () => void;
 }
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, onPrintRequest, onAvailabilityUpdate }) => {
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, onPrintRequest, onStoreUpdate }) => {
     const [activeTab, setActiveTab] = useState('orders');
     const [orders, setOrders] = useState<Order[]>([]);
     const [stats, setStats] = useState<SalesStatistics | null>(null);
@@ -163,7 +163,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose,
                             銷售統計
                         </button>
                         <button onClick={() => setActiveTab('availability')} className={`py-3 px-2 sm:px-4 font-semibold text-sm sm:text-base ${activeTab === 'availability' ? 'border-b-2 border-green-600 text-green-600' : 'text-slate-500 hover:text-slate-700'}`}>
-                            供應管理
+                            商店管理
                         </button>
                     </nav>
                 </div>
@@ -263,7 +263,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose,
                         </div>
                     )}
 
-                    {activeTab === 'availability' && <AvailabilityManager isOpen={isOpen} onAvailabilityUpdate={onAvailabilityUpdate} />}
+                    {activeTab === 'availability' && <AvailabilityManager isOpen={isOpen} onStoreUpdate={onStoreUpdate} />}
 
                 </main>
             </div>

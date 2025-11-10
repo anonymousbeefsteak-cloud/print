@@ -9,7 +9,7 @@ import OrderQueryModal from './components/OrderQueryModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import WelcomeModal from './components/WelcomeModal';
 import AIAssistantModal from './components/AIAssistantModal';
-import Carousel from './components/Carousel';
+import ConfirmationModal from './components/ConfirmationModal';
 import { CartIcon, RefreshIcon, SearchIcon, SparklesIcon } from './components/icons';
 import { PrintableOrder } from './components/PrintableOrder';
 
@@ -22,10 +22,13 @@ const App: React.FC = () => {
     const [isAdminDashboardOpen, setIsAdminDashboardOpen] = useState(false);
     const [isEditingFromCart, setIsEditingFromCart] = useState(false);
     const [printContent, setPrintContent] = useState<React.ReactNode | null>(null);
-    const [clearCartAfterPrint, setClearCartAfterPrint] = useState<boolean>(false);
     const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
     const [isAiModalOpen, setIsAiModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+    const [lastOrderId, setLastOrderId] = useState<string | null>(null);
+    const [lastSuccessfulOrder, setLastSuccessfulOrder] = useState<OrderData | null>(null);
 
     const [menuData, setMenuData] = useState<MenuCategory[]>([]);
     const [addons, setAddons] = useState<Addon[]>([]);
@@ -33,15 +36,13 @@ const App: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [notification, setNotification] = useState<string | null>(null);
-
-    const promoSlides = [
-        'https://raw.githubusercontent.com/anonymousbeefsteak-cloud/print/main/bs%20(2).jpg',
-        'https://raw.githubusercontent.com/anonymousbeefsteak-cloud/print/main/bic.jpg'
-    ];
+    const [isQuietHours, setIsQuietHours] = useState(false);
 
     const fetchData = useCallback(async () => {
         setNotification(null);
-        const { menu, addons, options: apiOptions, from } = await apiService.getMenuAndAddons();
+        const { menu, addons, options: apiOptions, from, isQuietHours: quietHoursStatus } = await apiService.getMenuAndAddons();
+
+        setIsQuietHours(quietHoursStatus);
 
         if (from === 'api' && (!menu || menu.length === 0 || menu.every(cat => cat.items.length === 0))) {
             setMenuData(MENU_DATA);
@@ -62,10 +63,7 @@ const App: React.FC = () => {
     useEffect(() => {
         if (printContent) {
             const handleAfterPrint = () => {
-                setPrintContent(null);
-                 if (clearCartAfterPrint) {
-                    window.location.reload();
-                }
+                window.location.reload();
             };
 
             window.addEventListener('afterprint', handleAfterPrint, { once: true });
@@ -79,10 +77,9 @@ const App: React.FC = () => {
                 window.removeEventListener('afterprint', handleAfterPrint);
             };
         }
-    }, [printContent, clearCartAfterPrint]);
+    }, [printContent]);
 
-    const handlePrintRequest = (content: React.ReactNode, clearCart: boolean = false) => {
-        setClearCartAfterPrint(clearCart);
+    const handlePrintRequest = (content: React.ReactNode) => {
         setPrintContent(content);
     };
 
@@ -111,7 +108,7 @@ const App: React.FC = () => {
     };
 
     const handleSelectItem = (item: MenuItem, category: MenuCategory) => {
-        if (!item.isAvailable) return;
+        if (!item.isAvailable || isQuietHours) return;
         setSelectedItem({ item, category });
     };
 
@@ -244,7 +241,21 @@ const App: React.FC = () => {
         try {
             const result = await apiService.submitOrder(orderData);
             if (result.success && result.orderId) {
-                handlePrintRequest(<PrintableOrder order={orderData} orderId={result.orderId} />, true);
+                const savedOrders = JSON.parse(localStorage.getItem('steakhouse-orders') || '[]');
+                if (!savedOrders.includes(result.orderId)) {
+                    savedOrders.unshift(result.orderId);
+                    localStorage.setItem('steakhouse-orders', JSON.stringify(savedOrders.slice(0, 5)));
+                }
+
+                // Directly trigger printing. The page will reload on 'afterprint' event.
+                handlePrintRequest(<PrintableOrder order={orderData} orderId={result.orderId} />);
+                
+                // State cleanup before reload
+                setLastOrderId(result.orderId);
+                setLastSuccessfulOrder(orderData);
+                setIsCartOpen(false);
+                setCart([]);
+
             } else {
                 setNotification(`訂單提交失敗: ${result.message || '未知錯誤'}`);
                 setTimeout(() => setNotification(null), 5000);
@@ -256,6 +267,11 @@ const App: React.FC = () => {
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleCloseConfirmation = () => {
+        setIsConfirmationModalOpen(false);
+        window.location.reload();
     };
 
     if (loading) {
@@ -298,8 +314,13 @@ const App: React.FC = () => {
                     </div>
                 </header>
 
-                <main className="container mx-auto p-4 md:p-6 lg:p-8">
-                    <Carousel slides={promoSlides} />
+                <main className="container mx-auto p-4 md:p-6 lg:p-8 relative">
+                    {isQuietHours && (
+                        <div className="absolute inset-0 bg-slate-900/70 z-10 flex flex-col justify-center items-center rounded-lg -m-2">
+                            <h2 className="text-4xl font-bold text-white mb-4">店家休息中</h2>
+                            <p className="text-lg text-slate-200">暫不接受點餐，敬請見諒</p>
+                        </div>
+                    )}
                     <Menu menuData={menuData} onSelectItem={handleSelectItem} />
                 </main>
 
@@ -362,7 +383,7 @@ const App: React.FC = () => {
                     isOpen={isAdminDashboardOpen}
                     onClose={() => setIsAdminDashboardOpen(false)}
                     onPrintRequest={handlePrintRequest}
-                    onAvailabilityUpdate={fetchData}
+                    onStoreUpdate={fetchData}
                 />
                 
                 <AIAssistantModal
@@ -370,6 +391,14 @@ const App: React.FC = () => {
                     onClose={() => setIsAiModalOpen(false)}
                     menuData={menuData}
                     addons={addons}
+                />
+
+                <ConfirmationModal
+                    isOpen={isConfirmationModalOpen}
+                    onClose={handleCloseConfirmation}
+                    orderId={lastOrderId}
+                    lastSuccessfulOrder={lastSuccessfulOrder}
+                    onPrintRequest={handlePrintRequest}
                 />
             </div>
         </>

@@ -1,6 +1,6 @@
 /**
  * =================================================================
- * 無名牛排點餐系統 - Google Apps Script 後端 v6.3
+ * 無名牛排點餐系統 - Google Apps Script 後端 v6.4
  * =================================================================
  *
  * 功能特色:
@@ -10,11 +10,12 @@
  * - 在 "KitchenOrders" 工作表為廚房員工建立詳細的工單。
  * - 若工作表不存在，會自動建立。
  * - 完整的後台管理 API，支援訂單查詢、狀態更新、銷售統計與 **品項供應狀態管理**。
+ * - **新增**: 支援「休息中」模式，可從後台一鍵暫停前端點餐功能。
  *
- * --- v6.3 版本更新 ---
- * - **錯誤修正**: 在 `onOpen` 函式中加入了 `try...catch` 區塊。這可以防止當使用者
- *   從 Apps Script 編輯器手動執行此函式時，因缺少 UI 上下文而導致的
- *   `Cannot call SpreadsheetApp.getUi()` 錯誤，從而提升了腳本的穩定性。
+ * --- v6.4 版本更新 ---
+ * - **新增功能**: 增加了「休息中」(Quiet Hours)模式。管理員可以在後台開啟此模式，
+ *   前端點餐系統將會顯示休息中的訊息並暫停點餐功能。狀態會儲存在新的 "Settings" 工作表中。
+ * - **錯誤修正**: 在 `onOpen` 函式中加入了 `try...catch` 區塊，提升了腳本的穩定性。
  *
  * 設定教學:
  * 1. 建立一份新的 Google Sheet。
@@ -28,13 +29,6 @@
  *    - 誰可以存取: 任何人
  * 8. 授予權限，並將網路應用程式的 URL 複製到您的前端設定檔中 (API_URL)。
  */
-const SAUCE_CHOICES = ["生蒜片", "黑胡椒", "泡菜", "巴薩米克醋", "蒜味醬", "橙汁醬", "椒鹽", "BBQ醬", "蕃茄醬", "泰式", "芥末"];
-const DESSERT_CHOICES_A = ["法式烤布蕾佐冰淇淋", "宇治紫米紅豆冰淇淋", "融岩巧克力佐冰淇淋", "阿薩斯蘋果佐冰淇淋", "烤焦糖布丁佐冰淇淋", "波士頓花生冰淇淋"];
-const DESSERT_CHOICES_B = ["蜜糖潛堡", "格子鬆餅", "美式鬆餅", "蜜糖吐司", "法式薄餅", "焦糖鍋巴", "蜜糖長棍", "香餅牛軋", "脆皮甜筒"];
-const PASTA_CHOICES_A = ['日豬/煎豬排天使義麵', '炸魚/煎魚天使義麵', '炸雞/雞肉天使義麵', '炒牛肉片天使義大利麵'];
-const PASTA_CHOICES_B = ['蕃茄索士', '青醬索士', '蒜油索士', '奶油索士', '海鮮索士', '黑椒索士', '肉醬索士', '沙茶索士'];
-const COLD_NOODLE_CHOICES = ["日式涼麵", "泰式涼麵", "沙茶涼麵", "蒜香涼麵", "金瓜涼麵", "巴薩米醋涼麵", "香葱涼麵", "凱撒涼麵", "橙汁涼麵", "黑胡椒涼麵", "台式涼麵", "BBQ涼麵"];
-
 
 function onOpen() {
   try {
@@ -51,6 +45,13 @@ function onOpen() {
 }
 
 function setupAllSheets() {
+    const SAUCE_CHOICES = ["生蒜片", "黑胡椒", "泡菜", "巴薩米克醋", "蒜味醬", "橙汁醬", "椒鹽", "BBQ醬", "蕃茄醬", "泰式", "芥末"];
+    const DESSERT_CHOICES_A = ["法式烤布蕾佐冰淇淋", "宇治紫米紅豆冰淇淋", "融岩巧克力佐冰淇淋", "阿薩斯蘋果佐冰淇淋", "烤焦糖布丁佐冰淇淋", "波士頓花生冰淇淋"];
+    const DESSERT_CHOICES_B = ["蜜糖潛堡", "格子鬆餅", "美式鬆餅", "蜜糖吐司", "法式薄餅", "焦糖鍋巴", "蜜糖長棍", "香餅牛軋", "脆皮甜筒"];
+    const PASTA_CHOICES_A = ['日豬/煎豬排天使義麵', '炸魚/煎魚天使義麵', '炸雞/雞肉天使義麵', '炒牛肉片天使義大利麵'];
+    const PASTA_CHOICES_B = ['蕃茄索士', '青醬索士', '蒜油索士', '奶油索士', '海鮮索士', '黑椒索士', '肉醬索士', '沙茶索士'];
+    const COLD_NOODLE_CHOICES = ["日式涼麵", "泰式涼麵", "沙茶涼麵", "蒜香涼麵", "金瓜涼麵", "巴薩米醋涼麵", "香葱涼麵", "凱撒涼麵", "橙汁涼麵", "黑胡椒涼麵", "台式涼麵", "BBQ涼麵"];
+
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     let ui = null;
     try {
@@ -60,7 +61,7 @@ function setupAllSheets() {
     }
     
     if (ui) {
-      const response = ui.alert('請確認', '此操作將會清除並重設 "Menu", "Addons" 與 "Options" 工作表。現有的菜單資料將會遺失。您確定要繼續嗎？', ui.ButtonSet.YES_NO);
+      const response = ui.alert('請確認', '此操作將會清除並重設 "Menu", "Addons", "Options" 與 "Settings" 工作表。現有的菜單和設定資料將會遺失。您確定要繼續嗎？', ui.ButtonSet.YES_NO);
       if (response !== ui.Button.YES) {
         ui.alert('操作已取消。');
         return;
@@ -72,6 +73,7 @@ function setupAllSheets() {
     const optionsHeaders = ["type", "name", "isAvailable"];
     const ordersHeaders = ["Timestamp", "OrderID", "CustomerName", "CustomerPhone", "TableNumber", "TotalAmount", "OrderType", "ItemsJSON"];
     const kitchenHeaders = ["Timestamp", "OrderID", "OrderType", "TableNumber", "ItemName", "Quantity", "Details", "Status"];
+    const settingsHeaders = ["Key", "Value"];
 
     const sampleMenuData = [
       ["套餐", "set-1", "板腱牛排+脆皮炸雞(炸魚)套餐", "10oz", 399, "附:①日湯②麵包③主餐④脆薯⑤飲料 6oz牛排 4oz雞塊", true, true, 2, true, false, false, true, true, null, null, "炸物選擇", "脆皮炸雞,炸魚"],
@@ -134,9 +136,14 @@ function setupAllSheets() {
         ...COLD_NOODLE_CHOICES.map(s => ['coldNoodles', s, true]),
     ];
 
+    const sampleSettingsData = [
+      ["quietHours", false]
+    ];
+
     createSheetWithData(ss, "Menu", menuHeaders, sampleMenuData, "N");
     createSheetWithData(ss, "Addons", addonsHeaders, sampleAddonsData, "E");
     createSheetWithData(ss, "Options", optionsHeaders, sampleOptionsData, "C");
+    createSheetWithData(ss, "Settings", settingsHeaders, sampleSettingsData, "B");
     getSheetAndCreateIfNeeded(ss, "Orders", ordersHeaders);
     getSheetAndCreateIfNeeded(ss, "KitchenOrders", kitchenHeaders);
 
@@ -189,6 +196,7 @@ function doPost(e) {
       case 'createOrder': return createJsonResponse(createOrderInSheet(payload.orderData));
       case 'updateOrderStatus': return createJsonResponse(updateOrderStatusInSheet(payload.orderId, payload.status));
       case 'updateAvailability': return createJsonResponse(updateAvailabilityInSheet(payload.data));
+      case 'updateQuietHoursStatus': return createJsonResponse(updateQuietHoursStatusInSheet(payload.status));
       default: return createJsonResponse({ success: false, message: '無效的操作' });
     }
   } catch (error) {
@@ -224,7 +232,18 @@ function getMenuAndAddonsFromSheet() {
   const menuSheet = ss.getSheetByName("Menu");
   const addonsSheet = ss.getSheetByName("Addons");
   const optionsSheet = ss.getSheetByName("Options");
-  if (!menuSheet || !addonsSheet) return { menu: [], addons: [], options: {} };
+  const settingsSheet = ss.getSheetByName("Settings");
+
+  if (!menuSheet || !addonsSheet) return { menu: [], addons: [], options: {}, isQuietHours: false };
+
+  let isQuietHours = false;
+  if (settingsSheet) {
+    const settingsData = settingsSheet.getDataRange().getValues();
+    const quietHoursRow = settingsData.find(row => row[0] === 'quietHours');
+    if (quietHoursRow) {
+      isQuietHours = quietHoursRow[1] === true;
+    }
+  }
 
   const menuValues = menuSheet.getDataRange().getValues();
   const menuHeaders = menuValues.shift() || [];
@@ -273,7 +292,7 @@ function getMenuAndAddonsFromSheet() {
     });
   }
 
-  return { menu: Object.values(menuCategories), addons: addons, options: options };
+  return { menu: Object.values(menuCategories), addons: addons, options: options, isQuietHours: isQuietHours };
 }
 
 function createOrderInSheet(orderData) {
@@ -358,6 +377,40 @@ function updateOrderStatusInSheet(orderId, status) {
     let updated = false;
     data.forEach((row, i) => { if (i > 0 && row[1] === orderId) { sheet.getRange(i + 1, 8).setValue(status); updated = true; } });
     return updated ? { success: true } : { success: false, message: '找不到訂單或更新失敗' };
+}
+
+function updateQuietHoursStatusInSheet(status) {
+  try {
+    if (typeof status !== 'boolean') {
+      return { success: false, message: '無效的狀態值。' };
+    }
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const settingsSheet = ss.getSheetByName("Settings");
+    if (!settingsSheet) {
+      return { success: false, message: '"Settings" 工作表不存在。' };
+    }
+    const data = settingsSheet.getDataRange().getValues();
+    const keyCol = 0;
+    const valueCol = 1;
+    let keyFound = false;
+
+    for (let i = 1; i < data.length; i++) { // 從 1 開始以跳過標頭
+      if (data[i][keyCol] === 'quietHours') {
+        settingsSheet.getRange(i + 1, valueCol + 1).setValue(status);
+        keyFound = true;
+        break;
+      }
+    }
+    
+    if (!keyFound) {
+      settingsSheet.appendRow(['quietHours', status]);
+    }
+    
+    return { success: true, message: '休息狀態已更新。' };
+  } catch (e) {
+    Logger.log("Update Quiet Hours Error: " + e.toString());
+    return { success: false, message: '更新狀態失敗: ' + e.message };
+  }
 }
 
 function updateAvailabilityInSheet(data) {
