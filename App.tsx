@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import type { MenuItem, MenuCategory, Addon, CartItem, OrderData, OptionsData } from './types';
+import type { MenuItem, MenuCategory, Addon, CartItem, OrderData, OptionsData, CustomerInfo, OrderType } from './types';
 import { apiService } from './services/apiService';
 import { MENU_DATA, ADDONS } from './constants';
 import Menu from './components/Menu';
 import ItemModal from './components/ItemModal';
-import Cart from './components/Cart';
+import Cart, { CartPanel } from './components/Cart';
 import OrderQueryModal from './components/OrderQueryModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import WelcomeModal from './components/WelcomeModal';
@@ -32,6 +32,11 @@ const App: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [notification, setNotification] = useState<string | null>(null);
+    
+    // Lifted state from Cart component
+    const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ name: '', phone: '', tableNumber: '' });
+    const [orderType, setOrderType] = useState<OrderType>('內用');
+    const [validationError, setValidationError] = useState<string | null>(null);
 
     const fetchData = useCallback(async () => {
         setNotification(null);
@@ -230,6 +235,35 @@ const App: React.FC = () => {
     };
     
     const cartItemCount = useMemo(() => cart.reduce((total, item) => total + item.quantity, 0), [cart]);
+    const cartTotalPrice = useMemo(() => cart.reduce((total, item) => total + item.totalPrice, 0), [cart]);
+
+    const handleCustomerInfoChange = (field: keyof CustomerInfo, value: string) => {
+        if (validationError) setValidationError(null);
+
+        if (field === 'phone') {
+            const numericValue = value.replace(/[^0-9]/g, '');
+            if (numericValue.length <= 10) {
+                setCustomerInfo(prev => ({ ...prev, phone: numericValue }));
+            }
+        } else {
+            setCustomerInfo(prev => ({ ...prev, [field]: value }));
+        }
+    };
+    
+    useEffect(() => {
+        if (orderType === '外帶') setCustomerInfo(prev => ({ ...prev, tableNumber: '' }));
+    }, [orderType]);
+
+    const handleCheckout = () => {
+        setValidationError(null);
+        if (cart.length === 0) { setValidationError('您的購物車是空的'); return; }
+        if (!customerInfo.name.trim()) { setValidationError('請填寫您的姓名'); return; }
+        if (!customerInfo.phone.trim()) { setValidationError('請填寫您的電話'); return; }
+        if (!/^[0-9]{10}$/.test(customerInfo.phone)) { setValidationError('請輸入有效的手機號碼（10位數字）'); return; }
+
+        const orderData: OrderData = { items: cart, totalPrice: cartTotalPrice, customerInfo, orderType };
+        handleSubmitAndPrint(orderData);
+    };
 
     const handleSubmitAndPrint = async (orderData: OrderData) => {
         if (isSubmitting) return;
@@ -250,6 +284,22 @@ const App: React.FC = () => {
         } finally {
             setIsSubmitting(false);
         }
+    };
+    
+    const cartPanelProps = {
+        cartItems: cart,
+        onUpdateQuantity: handleUpdateQuantity,
+        onRemoveItem: handleRemoveFromCart,
+        onEditItem: handleEditItem,
+        customerInfo: customerInfo,
+        onInfoChange: handleCustomerInfoChange,
+        totalPrice: cartTotalPrice,
+        handleCheckout: handleCheckout,
+        isSubmitting: isSubmitting,
+        orderType: orderType,
+        setOrderType: setOrderType,
+        validationError: validationError,
+        setValidationError: setValidationError,
     };
 
     if (loading) {
@@ -292,9 +342,22 @@ const App: React.FC = () => {
                     </div>
                 </header>
 
-                <main className="container mx-auto p-4 md:p-6 lg:p-8">
-                    <Menu menuData={menuData} onSelectItem={handleSelectItem} />
-                </main>
+                <div className="container mx-auto">
+                    <div className="lg:flex lg:gap-x-8">
+                        <main className="w-full lg:w-3/5 xl:w-2/3 lg:pr-4">
+                             <Menu menuData={menuData} onSelectItem={handleSelectItem} />
+                        </main>
+                        
+                        <aside className="hidden lg:block lg:w-2/5 xl:w-1/3">
+                            <div className="sticky top-[88px] h-[calc(100vh-112px)]">
+                               <div className="bg-white rounded-lg shadow-lg h-full border">
+                                    <CartPanel {...cartPanelProps} showCloseButton={false} onClose={() => {}} />
+                               </div>
+                            </div>
+                        </aside>
+                    </div>
+                </div>
+
 
                 <footer className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 text-center text-slate-500 text-sm">
                     <div className="border-t border-slate-200 pt-8 space-y-2">
@@ -316,7 +379,7 @@ const App: React.FC = () => {
                 {cartItemCount > 0 && (
                     <button
                         onClick={() => setIsCartOpen(true)}
-                        className="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 flex items-center justify-center bg-green-700 text-white rounded-full shadow-lg hover:bg-green-800 transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-700 focus:ring-opacity-50 h-16 w-16"
+                        className="lg:hidden fixed bottom-6 right-6 flex items-center justify-center bg-green-700 text-white rounded-full shadow-lg hover:bg-green-800 transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-700 focus:ring-opacity-50 h-16 w-16"
                         aria-label={`查看購物車，共有 ${cartItemCount} 項商品`}
                     >
                         <CartIcon className="h-8 w-8" />
@@ -324,16 +387,13 @@ const App: React.FC = () => {
                     </button>
                 )}
 
-                <Cart
-                    isOpen={isCartOpen}
-                    onClose={() => setIsCartOpen(false)}
-                    cartItems={cart}
-                    onUpdateQuantity={handleUpdateQuantity}
-                    onRemoveItem={handleRemoveFromCart}
-                    onEditItem={handleEditItem}
-                    onSubmitAndPrint={handleSubmitAndPrint}
-                    isSubmitting={isSubmitting}
-                />
+                <div className="lg:hidden">
+                    <Cart
+                        isOpen={isCartOpen}
+                        onClose={() => setIsCartOpen(false)}
+                        {...cartPanelProps}
+                    />
+                </div>
 
                 {selectedItem && (
                     <ItemModal
