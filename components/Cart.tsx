@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import type { CartItem, CustomerInfo, OrderData, OrderType, SelectedSauce } from '../types';
+import React, { useMemo } from 'react';
+import type { CartItem, CustomerInfo, OrderType, SelectedSauce } from '../types';
 import { CloseIcon, CartIcon, MinusIcon, PlusIcon, TrashIcon } from './icons';
-import { PrintableOrder } from './PrintableOrder';
 
-interface CartMainViewProps {
+interface CartPanelProps {
+    showCloseButton: boolean;
     onClose: () => void;
     cartItems: CartItem[];
     onUpdateQuantity: (cartId: string, newQuantity: number) => void;
@@ -20,7 +20,7 @@ interface CartMainViewProps {
     setValidationError: (error: string | null) => void;
 }
 
-const CartMainView: React.FC<CartMainViewProps> = ({ onClose, cartItems, onUpdateQuantity, onRemoveItem, onEditItem, customerInfo, onInfoChange, totalPrice, handleCheckout, isSubmitting, orderType, setOrderType, validationError, setValidationError }) => {
+export const CartPanel: React.FC<CartPanelProps> = ({ showCloseButton, onClose, cartItems, onUpdateQuantity, onRemoveItem, onEditItem, customerInfo, onInfoChange, totalPrice, handleCheckout, isSubmitting, orderType, setOrderType, validationError, setValidationError }) => {
     const aggregatedOptions = useMemo(() => {
         const drinks: { [key: string]: number } = {};
         const sauces: { [key: string]: number } = {};
@@ -49,7 +49,10 @@ const CartMainView: React.FC<CartMainViewProps> = ({ onClose, cartItems, onUpdat
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex justify-between items-center p-5 border-b"><h2 className="text-2xl font-bold text-slate-800">我的購物車</h2><button onClick={onClose} className="text-slate-500 hover:text-slate-800"><CloseIcon /></button></div>
+            <div className="flex justify-between items-center p-5 border-b">
+              <h2 className="text-2xl font-bold text-slate-800">我的購物車</h2>
+              {showCloseButton && <button onClick={onClose} className="text-slate-500 hover:text-slate-800"><CloseIcon /></button>}
+            </div>
             {cartItems.length === 0 ? (<div className="flex-grow flex flex-col justify-center items-center text-slate-500 p-4"><CartIcon className="w-24 h-24 mb-4 text-slate-300"/><p className="text-lg">您的購物車是空的</p></div>) : (<>
                 <div className="flex-grow overflow-y-auto">
                     <div className="p-5 space-y-6">
@@ -89,80 +92,19 @@ const CartMainView: React.FC<CartMainViewProps> = ({ onClose, cartItems, onUpdat
     );
 };
 
-interface CartProps {
+interface CartProps extends Omit<CartPanelProps, 'showCloseButton'> {
     isOpen: boolean;
-    onClose: () => void;
-    cartItems: CartItem[];
-    onUpdateQuantity: (cartId: string, newQuantity: number) => void;
-    onRemoveItem: (cartId: string) => void;
-    onEditItem: (cartId: string) => void;
-    onSubmitAndPrint: (orderData: OrderData) => void;
-    isSubmitting: boolean;
 }
 
-const Cart: React.FC<CartProps> = ({ isOpen, onClose, cartItems, onUpdateQuantity, onRemoveItem, onEditItem, onSubmitAndPrint, isSubmitting }) => {
-    const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ name: '', phone: '', tableNumber: '' });
-    const [orderType, setOrderType] = useState<OrderType>('內用');
-    const [validationError, setValidationError] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (!isOpen) {
-            setTimeout(() => {
-                setOrderType('內用');
-                setValidationError(null);
-            }, 300);
-        }
-    }, [isOpen]);
-
-    useEffect(() => {
-        if (orderType === '外帶') setCustomerInfo(prev => ({ ...prev, tableNumber: '' }));
-    }, [orderType]);
-
-    const handleCustomerInfoChange = (field: keyof CustomerInfo, value: string) => {
-        if (validationError) setValidationError(null);
-
-        if (field === 'phone') {
-            const numericValue = value.replace(/[^0-9]/g, '');
-            if (numericValue.length <= 10) {
-                setCustomerInfo(prev => ({ ...prev, phone: numericValue }));
-            }
-        } else {
-            setCustomerInfo(prev => ({ ...prev, [field]: value }));
-        }
-    };
-
-    const totalPrice = useMemo(() => cartItems.reduce((total, item) => total + item.totalPrice, 0), [cartItems]);
-
-    const handleCheckout = () => {
-        setValidationError(null);
-        if (cartItems.length === 0) { setValidationError('您的購物車是空的'); return; }
-        if (!customerInfo.name.trim()) { setValidationError('請填寫您的姓名'); return; }
-        if (!customerInfo.phone.trim()) { setValidationError('請填寫您的電話'); return; }
-        if (!/^[0-9]{10}$/.test(customerInfo.phone)) { setValidationError('請輸入有效的手機號碼（10位數字）'); return; }
-
-        const orderData: OrderData = { items: cartItems, totalPrice, customerInfo, orderType };
-        onSubmitAndPrint(orderData);
-    };
-
+const Cart: React.FC<CartProps> = ({ isOpen, onClose, ...rest }) => {
     return (
         <>
             <div className={`fixed inset-0 bg-black bg-opacity-50 z-30 transition-opacity ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={onClose} />
             <div className={`fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-lg z-40 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-                <CartMainView 
+                <CartPanel 
+                    showCloseButton={true}
                     onClose={onClose} 
-                    cartItems={cartItems} 
-                    onUpdateQuantity={onUpdateQuantity} 
-                    onRemoveItem={onRemoveItem} 
-                    onEditItem={onEditItem} 
-                    customerInfo={customerInfo} 
-                    onInfoChange={handleCustomerInfoChange} 
-                    orderType={orderType} 
-                    setOrderType={setOrderType} 
-                    totalPrice={totalPrice} 
-                    handleCheckout={handleCheckout} 
-                    isSubmitting={isSubmitting}
-                    validationError={validationError} 
-                    setValidationError={setValidationError} 
+                    {...rest}
                 />
             </div>
         </>
