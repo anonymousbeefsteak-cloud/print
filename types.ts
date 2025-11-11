@@ -148,20 +148,17 @@ export interface OrderSummary {
     timestamp: string;
 }
 
-export interface PopularItem {
-    name: string;
-    quantity: number;
-    revenue: number;
-}
-
-export interface SalesTrendData {
-    date: string; 
-    revenue: number;
-}
-
+// FIX: Add SalesStatistics type for admin dashboard analytics.
 export interface SalesStatistics {
     totalRevenue: number;
     orderCount: number;
-    popularItems: PopularItem[];
-    salesTrend: SalesTrendData[];
+    popularItems: {
+        name: string;
+        quantity: number;
+        revenue: number;
+    }[];
+    salesTrend: {
+        date: string;
+        revenue: number;
+    }[];
 }

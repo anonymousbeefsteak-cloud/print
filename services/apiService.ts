@@ -1,4 +1,4 @@
-import type { MenuCategory, Addon, OrderData, Order, OrderSummary, OrderStatus, SalesStatistics, OptionsData } from '../types';
+import type { MenuCategory, Addon, OrderData, Order, OrderSummary, OptionsData, OrderStatus, SalesStatistics } from '../types';
 import { MENU_DATA, ADDONS, SAUCE_CHOICES, DESSERT_CHOICES_A, DESSERT_CHOICES_B, PASTA_CHOICES_A, PASTA_CHOICES_B, COLD_NOODLE_CHOICES, SIMPLE_MEAL_CHOICES } from '../constants';
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbysg8PL7L7w9cnhkHwHhZVBwgZo70bVIA6C84KnkBc_g1wHQmUTfZnj46pr3YEol6QT/exec'; 
@@ -101,7 +101,8 @@ const apiService = {
     }
   },
 
-  async getAllOrders(): Promise<{ success: boolean; orders?: Order[]; message?: string }> {
+  // FIX: Implement getAllOrders for the admin dashboard.
+  async getAllOrders(): Promise<{ success: boolean; orders?: Order[]; message?: string; }> {
     try {
       const response = await fetch(`${API_URL}?action=getAllOrders`);
       if (!response.ok) throw new Error('Network response was not ok');
@@ -113,27 +114,8 @@ const apiService = {
     }
   },
 
-  async updateOrderStatus(orderId: string, status: OrderStatus): Promise<{ success: boolean; message?: string }> {
-    try {
-      const payload = { action: 'updateOrderStatus', orderId, status };
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Server responded with ${response.status}: ${errorText}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error(`Failed to update status for order ${orderId}:`, error);
-      const message = error instanceof Error ? error.message : "An unknown error occurred.";
-      return { success: false, message };
-    }
-  },
-
-  async getSalesStatistics(startDate: string, endDate: string): Promise<{ success: boolean; stats?: SalesStatistics; message?: string }> {
+  // FIX: Implement getSalesStatistics for the admin dashboard.
+  async getSalesStatistics(startDate: string, endDate: string): Promise<{ success: boolean; stats?: SalesStatistics; message?: string; }> {
     try {
       const query = new URLSearchParams({ action: 'getSalesStatistics', startDate, endDate });
       const response = await fetch(`${API_URL}?${query.toString()}`);
@@ -146,18 +128,42 @@ const apiService = {
     }
   },
 
-  async updateAvailability(data: { menu: Record<string, boolean>, addons: Record<string, boolean>, options: Partial<Record<keyof OptionsData, Record<string, boolean>>> }): Promise<{ success: boolean; message?: string }> {
+  // FIX: Implement updateOrderStatus for the admin dashboard.
+  async updateOrderStatus(orderId: string, status: OrderStatus): Promise<{ success: boolean; message?: string; }> {
     try {
-      const payload = { action: 'updateAvailability', data };
+      const payload = {
+        action: 'updateOrderStatus',
+        orderId,
+        status,
+      };
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload),
       });
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Server responded with ${response.status}: ${errorText}`);
-      }
+      if (!response.ok) throw new Error('Network response was not ok');
+      return await response.json();
+    } catch (error) {
+      console.error("Failed to update order status:", error);
+      const message = error instanceof Error ? error.message : "An unknown error occurred.";
+      return { success: false, message };
+    }
+  },
+
+  // FIX: Implement updateAvailability for the store management panel.
+  async updateAvailability(availability: any): Promise<{ success: boolean; message?: string; }> {
+    try {
+      const payload = {
+        action: 'updateAvailability',
+        // Stringify the inner object, as the outer payload will be stringified again.
+        availability: JSON.stringify(availability),
+      };
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error('Network response was not ok');
       return await response.json();
     } catch (error) {
       console.error("Failed to update availability:", error);
@@ -165,26 +171,27 @@ const apiService = {
       return { success: false, message };
     }
   },
-  
-  async updateQuietHoursStatus(status: boolean): Promise<{ success: boolean; message?: string }> {
+
+  // FIX: Implement updateQuietHoursStatus for the store management panel.
+  async updateQuietHoursStatus(isQuietHours: boolean): Promise<{ success: boolean; message?: string; }> {
     try {
-      const payload = { action: 'updateQuietHoursStatus', status };
+      const payload = {
+        action: 'updateQuietHoursStatus',
+        isQuietHours,
+      };
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload),
       });
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Server responded with ${response.status}: ${errorText}`);
-      }
+      if (!response.ok) throw new Error('Network response was not ok');
       return await response.json();
     } catch (error) {
       console.error("Failed to update quiet hours status:", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred.";
       return { success: false, message };
     }
-  }
+  },
 };
 
 export { apiService };

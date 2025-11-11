@@ -175,3 +175,5 @@ export const COLD_NOODLE_CHOICES = ["日式涼麵", "泰式涼麵", "沙茶涼�
 // 簡餐選擇
 export const SIMPLE_MEAL_CHOICES = ["黃金脆皮炸雞塊", "黃金泡菜脆皮雞塊吃到堡", "華夫蘋果沙拉雞塊吃到堡", "蛋沙拉脆皮雞塊吃到堡", "波士頓花生冰淇淋吃到堡", "溶岩巧克佐冰淇淋吃到堡"];
 
+// 附餐選擇
+export const SIDE_DISH_CHOICES = ["日湯", "脆薯", "甜品", "飲料"];
