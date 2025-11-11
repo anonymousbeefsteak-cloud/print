@@ -93,7 +93,7 @@ const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onClose, me
 
         setError(null);
         const newUserMessage: Message = { role: 'user', content: trimmedInput };
-        setMessages(prev => [...prev, newUserMessage]);
+        setMessages(prev => [...prev, newUserMessage, { role: 'model', content: '' }]);
         setUserInput('');
         setIsLoading(true);
         
@@ -102,27 +102,43 @@ const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onClose, me
         if (!ai) {
             const errorMessage = "AI 小幫手目前無法使用，請確認 API 金鑰是否已正確設定。";
             setError(errorMessage);
-            setMessages(prev => [...prev, { role: 'model', content: errorMessage }]);
+            setMessages(prev => {
+                const newMessages = [...prev];
+                newMessages[newMessages.length - 1].content = errorMessage;
+                return newMessages;
+            });
             setIsLoading(false);
             return;
         }
 
         try {
-            const response = await ai.models.generateContent({
+            const response = await ai.models.generateContentStream({
                 model: 'gemini-2.5-flash',
                 contents: trimmedInput,
                 config: {
-                    systemInstruction: `你是一位專業且友善的「無名牛排」點餐小幫手。你的任務是根據我提供的菜單JSON資料，回答顧客的問題。請務必只使用提供的菜單資料來回答，不要杜撰任何菜單上沒有的品項、價格或資訊。如果顧客詢問有關售罄 (isAvailable: false) 的商品，請告知他們該商品目前無法提供。回答時請使用繁體中文，語氣親切有禮，並盡量用條列式或重點式的方式清楚呈現，讓顧客一目了然。\n\n${menuContext}`,
+                    systemInstruction: `You are a professional and friendly "Nameless Steakhouse" ordering assistant. Your task is to answer customer questions based on the menu JSON data I provide. You must only use the provided menu data to answer, do not invent any items, prices, or information not on the menu. If a customer asks about a sold-out (isAvailable: false) item, please inform them that the item is currently unavailable. Please respond in Traditional Chinese, with a friendly and courteous tone. Use lists or key points to present information clearly and concisely for the customer's convenience.\n\n${menuContext}`,
                 },
             });
 
-            const aiResponse: Message = { role: 'model', content: response.text };
-            setMessages(prev => [...prev, aiResponse]);
+            let accumulatedText = "";
+            for await (const chunk of response) {
+                accumulatedText += chunk.text;
+                setMessages(prev => {
+                    const newMessages = [...prev];
+                    newMessages[newMessages.length - 1].content = accumulatedText;
+                    return newMessages;
+                });
+            }
+
         } catch (err) {
             console.error("Gemini API call failed:", err);
             const errorMessage = "抱歉，我現在無法回答問題，請稍後再試。";
             setError(errorMessage);
-            setMessages(prev => [...prev, { role: 'model', content: errorMessage }]);
+            setMessages(prev => {
+                const newMessages = [...prev];
+                newMessages[newMessages.length - 1].content = errorMessage;
+                return newMessages;
+            });
         } finally {
             setIsLoading(false);
         }
