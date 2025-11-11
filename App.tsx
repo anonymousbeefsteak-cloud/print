@@ -383,12 +383,14 @@ const App: React.FC = () => {
                     onClose={() => setIsQueryModalOpen(false)}
                 />
                 
-                <AdminDashboard 
-                    isOpen={isAdminDashboardOpen}
-                    onClose={() => setIsAdminDashboardOpen(false)}
-                    onPrintRequest={handlePrintRequest}
-                    onStoreUpdate={fetchData}
-                />
+                {!isNoMaVersion && (
+                    <AdminDashboard 
+                        isOpen={isAdminDashboardOpen}
+                        onClose={() => setIsAdminDashboardOpen(false)}
+                        onPrintRequest={handlePrintRequest}
+                        onStoreUpdate={fetchData}
+                    />
+                )}
                 
                 <AIAssistantModal
                     isOpen={isAiModalOpen}
