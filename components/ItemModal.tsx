@@ -35,6 +35,7 @@ const ItemModal: React.FC<ItemModalProps> = ({ selectedItem, editingItem, addons
   const [selectedDrinks, setSelectedDrinks] = useState<{ [key: string]: number }>({});
   const [selectedDesserts, setSelectedDesserts] = useState<SelectedDessert[]>([]);
   const [selectedPastas, setSelectedPastas] = useState<SelectedPasta[]>([]);
+  const [selectedComponent, setSelectedComponent] = useState<{ [key: string]: number }>({});
   const [selectedSideChoices, setSelectedSideChoices] = useState<{ [key: string]: number }>({});
   const [selectedMultiChoice, setSelectedMultiChoice] = useState<{ [key: string]: number }>({});
   const [selectedSingleChoiceAddon, setSelectedSingleChoiceAddon] = useState<string | undefined>(undefined);
@@ -51,6 +52,7 @@ const ItemModal: React.FC<ItemModalProps> = ({ selectedItem, editingItem, addons
       setSelectedDrinks(editingItem.selectedDrinks || {});
       setSelectedDesserts(editingItem.selectedDesserts || []);
       setSelectedPastas(editingItem.selectedPastas || []);
+      setSelectedComponent(editingItem.selectedComponent || {});
       setSelectedSideChoices(editingItem.selectedSideChoices || {});
       setSelectedMultiChoice(editingItem.selectedMultiChoice || {});
       setSelectedSingleChoiceAddon(editingItem.selectedSingleChoiceAddon);
@@ -63,6 +65,7 @@ const ItemModal: React.FC<ItemModalProps> = ({ selectedItem, editingItem, addons
       setSelectedDrinks({});
       setSelectedDesserts([]);
       setSelectedPastas([]);
+      setSelectedComponent({});
       setSelectedSideChoices({});
       setSelectedMultiChoice({});
       setSelectedSingleChoiceAddon(undefined);
@@ -160,6 +163,7 @@ const ItemModal: React.FC<ItemModalProps> = ({ selectedItem, editingItem, addons
   const sauceLimit = useMemo(() => (custom.saucesPerItem ? custom.saucesPerItem * quantity : quantity), [custom.saucesPerItem, quantity]);
   const sauceCount = useMemo(() => selectedSauces.reduce((sum, s) => sum + s.quantity, 0), [selectedSauces]);
   const drinkCount = useMemo(() => Object.values(selectedDrinks).reduce((a: number, b: number) => a + b, 0), [selectedDrinks]);
+  const componentCount = useMemo(() => Object.values(selectedComponent).reduce((a: number, b: number) => a + b, 0), [selectedComponent]);
   const sideChoiceLimit = useMemo(() => (custom.sideChoice ? custom.sideChoice.choices * quantity : 0), [custom.sideChoice, quantity]);
   const sideChoiceCount = useMemo(() => Object.values(selectedSideChoices).reduce((a: number, b: number) => a + b, 0), [selectedSideChoices]);
   const multiChoiceCount = useMemo(() => Object.values(selectedMultiChoice).reduce((a: number, b: number) => a + b, 0), [selectedMultiChoice]);
@@ -186,6 +190,17 @@ const ItemModal: React.FC<ItemModalProps> = ({ selectedItem, editingItem, addons
       return selectedPastas.filter(p => pastaGroupB.includes(p.name)).reduce((s, p) => s + p.quantity, 0);
   }, [selectedPastas, options.pastasB, custom.pastaChoice]);
 
+  const multiChoiceOptions = useMemo(() => {
+    if (!custom.multiChoice) return [];
+    if (custom.multiChoice.title.includes('涼麵')) {
+      return options.coldNoodles;
+    }
+    if (custom.multiChoice.title.includes('主餐選擇')) {
+      return options.simpleMeals || [];
+    }
+    // Fallback using the options from the item itself, assuming they are available by default
+    return custom.multiChoice.options.map(name => ({ name, isAvailable: true }));
+  }, [custom.multiChoice, options]);
 
   const handleConfirm = () => {
     setValidationError(null);
@@ -213,6 +228,9 @@ const ItemModal: React.FC<ItemModalProps> = ({ selectedItem, editingItem, addons
             setValidationError(`主食和醬料各需選擇 ${quantity} 份`); return;
         }
     }
+    if (custom.componentChoice && componentCount !== quantity) {
+      setValidationError(`${custom.componentChoice.title} 需選擇 ${quantity} 份`); return;
+    }
     if (custom.sideChoice) {
       const limit = custom.sideChoice.choices * quantity;
       if (sideChoiceCount !== limit) {
@@ -229,6 +247,7 @@ const ItemModal: React.FC<ItemModalProps> = ({ selectedItem, editingItem, addons
       drinks: selectedDrinks,
       desserts: selectedDesserts,
       pastas: selectedPastas,
+      componentChoices: selectedComponent,
       sideChoices: selectedSideChoices,
       multiChoice: selectedMultiChoice,
       singleChoiceAddon: selectedSingleChoiceAddon,
@@ -298,9 +317,11 @@ const ItemModal: React.FC<ItemModalProps> = ({ selectedItem, editingItem, addons
 
           {custom.drinkChoice && <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">選擇飲料 <span className="text-sm font-normal text-slate-500">(已選 {drinkCount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{DRINK_CHOICES.map(drink => renderSimpleCounter(drink, selectedDrinks[drink] || 0, () => handleOptionChange(setSelectedDrinks, drink, 1, quantity), () => handleOptionChange(setSelectedDrinks, drink, -1, quantity)))}</div></div>}
           
+          {custom.componentChoice && <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">{custom.componentChoice.title} <span className="text-sm font-normal text-slate-500">(已選 {componentCount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{custom.componentChoice.options.map(c => renderSimpleCounter(c, selectedComponent[c] || 0, () => handleOptionChange(setSelectedComponent, c, 1, quantity), () => handleOptionChange(setSelectedComponent, c, -1, quantity)))}</div></div>}
+
           {custom.sideChoice && <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">{custom.sideChoice.title} <span className="text-sm font-normal text-slate-500">(已選 {sideChoiceCount} / 共需選 {sideChoiceLimit} 份)</span></h3><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{custom.sideChoice.options.map(s => renderSimpleCounter(s, selectedSideChoices[s] || 0, () => handleOptionChange(setSelectedSideChoices, s, 1, sideChoiceLimit), () => handleOptionChange(setSelectedSideChoices, s, -1, sideChoiceLimit)))}</div></div>}
           
-          {custom.multiChoice && <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">{custom.multiChoice.title} <span className="text-sm font-normal text-slate-500">(已選 {multiChoiceCount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{options.coldNoodles.map(choice => renderChoiceCounter( choice, selectedMultiChoice[choice.name] || 0, () => { if (choice.isAvailable) handleOptionChange(setSelectedMultiChoice, choice.name, 1, quantity); }, () => handleOptionChange(setSelectedMultiChoice, choice.name, -1, quantity) ))}</div></div>}
+          {custom.multiChoice && <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">{custom.multiChoice.title} <span className="text-sm font-normal text-slate-500">(已選 {multiChoiceCount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{multiChoiceOptions.map(choice => renderChoiceCounter( choice, selectedMultiChoice[choice.name] || 0, () => { if (choice.isAvailable) handleOptionChange(setSelectedMultiChoice, choice.name, 1, quantity); }, () => handleOptionChange(setSelectedMultiChoice, choice.name, -1, quantity) ))}</div></div>}
 
           {custom.dessertChoice && <>
             <div className="p-4 bg-slate-100 rounded-lg"><h3 className="font-semibold text-slate-700 mb-3">選擇甜品 (A區) <span className="text-sm font-normal text-slate-500">(已選 {dessertACount} / 共需選 {quantity} 份)</span></h3><div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">{options.dessertsA.map(dessert => renderChoiceCounter(dessert, selectedDesserts.find(s => s.name === dessert.name)?.quantity || 0, () => { if (dessert.isAvailable) handleArrayOfObjectsChange(setSelectedDesserts, dessert.name, 1, quantity, options.dessertsA.map(d=>d.name)) }, () => handleArrayOfObjectsChange(setSelectedDesserts, dessert.name, -1, quantity, options.dessertsA.map(d=>d.name)) ))}</div></div>

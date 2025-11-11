@@ -1,5 +1,5 @@
 import type { MenuCategory, Addon, OrderData, Order, OrderSummary, OrderStatus, SalesStatistics, OptionsData } from '../types';
-import { MENU_DATA, ADDONS, SAUCE_CHOICES, DESSERT_CHOICES_A, DESSERT_CHOICES_B, PASTA_CHOICES_A, PASTA_CHOICES_B, COLD_NOODLE_CHOICES } from '../constants';
+import { MENU_DATA, ADDONS, SAUCE_CHOICES, DESSERT_CHOICES_A, DESSERT_CHOICES_B, PASTA_CHOICES_A, PASTA_CHOICES_B, COLD_NOODLE_CHOICES, SIMPLE_MEAL_CHOICES } from '../constants';
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbysg8PL7L7w9cnhkHwHhZVBwgZo70bVIA6C84KnkBc_g1wHQmUTfZnj46pr3YEol6QT/exec'; 
 
@@ -10,6 +10,7 @@ const generateFallbackOptions = (): OptionsData => ({
     pastasA: PASTA_CHOICES_A.map(s => ({ name: s, isAvailable: true })),
     pastasB: PASTA_CHOICES_B.map(s => ({ name: s, isAvailable: true })),
     coldNoodles: COLD_NOODLE_CHOICES.map(s => ({ name: s, isAvailable: true })),
+    simpleMeals: SIMPLE_MEAL_CHOICES.map(s => ({ name: s, isAvailable: true })),
 });
 
 
@@ -29,6 +30,7 @@ const apiService = {
           pastasA: data.options.pastasA?.length > 0 ? data.options.pastasA : fallbackOptions.pastasA,
           pastasB: data.options.pastasB?.length > 0 ? data.options.pastasB : fallbackOptions.pastasB,
           coldNoodles: data.options.coldNoodles?.length > 0 ? data.options.coldNoodles : fallbackOptions.coldNoodles,
+          simpleMeals: data.options.simpleMeals?.length > 0 ? data.options.simpleMeals : fallbackOptions.simpleMeals,
       };
 
       return { ...data, options: finalOptions, from: 'api', isQuietHours: data.isQuietHours || false };

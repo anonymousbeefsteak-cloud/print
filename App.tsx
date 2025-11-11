@@ -9,6 +9,7 @@ import OrderQueryModal from './components/OrderQueryModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import WelcomeModal from './components/WelcomeModal';
 import AIAssistantModal from './components/AIAssistantModal';
+import ConfirmationModal from './components/ConfirmationModal';
 import { CartIcon, RefreshIcon, SearchIcon, SparklesIcon } from './components/icons';
 import { PrintableOrder } from './components/PrintableOrder';
 
@@ -24,6 +25,10 @@ const App: React.FC = () => {
     const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
     const [isAiModalOpen, setIsAiModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+    const [lastOrderId, setLastOrderId] = useState<string | null>(null);
+    const [lastSuccessfulOrder, setLastSuccessfulOrder] = useState<OrderData | null>(null);
 
     const [menuData, setMenuData] = useState<MenuCategory[]>([]);
     const [addons, setAddons] = useState<Addon[]>([]);
@@ -126,7 +131,7 @@ const App: React.FC = () => {
     };
 
     const createCartItemObject = (item: MenuItem, quantity: number, options: any, category: MenuCategory): Omit<CartItem, 'cartId'> => {
-        const { donenesses, drinks, addons, notes, sauces, desserts, pastas, singleChoiceAddon, multiChoice, sideChoices } = options;
+        const { donenesses, drinks, addons, notes, sauces, desserts, pastas, singleChoiceAddon, multiChoice, componentChoices, sideChoices } = options;
         
         const generateStableObjectString = (obj: object) => {
             if (!obj || Object.keys(obj).length === 0) return '';
@@ -143,6 +148,7 @@ const App: React.FC = () => {
             drinks: generateStableObjectString(drinks),
             sideChoices: generateStableObjectString(sideChoices),
             multiChoice: generateStableObjectString(multiChoice),
+            componentChoices: generateStableObjectString(componentChoices),
             notes: notes,
             addons: (addons || []).map((a: { id: string; quantity: any; }) => `${a.id}:${a.quantity}`).sort().join(','),
             sauces: (sauces || []).map((s: { name: string; quantity: any; }) => `${s.name}:${s.quantity}`).sort().join(','),
@@ -164,6 +170,7 @@ const App: React.FC = () => {
             selectedSauces: sauces || [],
             selectedDesserts: desserts || [],
             selectedPastas: pastas || [],
+            selectedComponent: componentChoices,
             selectedNotes: notes,
             selectedSingleChoiceAddon: singleChoiceAddon,
             selectedMultiChoice: multiChoice,
@@ -242,9 +249,12 @@ const App: React.FC = () => {
                     localStorage.setItem('steakhouse-orders', JSON.stringify(savedOrders.slice(0, 5)));
                 }
 
+                // Clean up state and show confirmation modal
+                setLastOrderId(result.orderId);
+                setLastSuccessfulOrder(orderData);
                 setIsCartOpen(false);
                 setCart([]);
-                handlePrintRequest(<PrintableOrder order={orderData} orderId={result.orderId} />);
+                setIsConfirmationModalOpen(true);
 
             } else {
                 setNotification(`訂單提交失敗: ${result.message || '未知錯誤'}`);
@@ -257,6 +267,11 @@ const App: React.FC = () => {
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleCloseConfirmation = () => {
+        setIsConfirmationModalOpen(false);
+        window.location.reload();
     };
 
     if (loading) {
@@ -376,6 +391,14 @@ const App: React.FC = () => {
                     onClose={() => setIsAiModalOpen(false)}
                     menuData={menuData}
                     addons={addons}
+                />
+
+                <ConfirmationModal
+                    isOpen={isConfirmationModalOpen}
+                    onClose={handleCloseConfirmation}
+                    orderId={lastOrderId}
+                    lastSuccessfulOrder={lastSuccessfulOrder}
+                    onPrintRequest={handlePrintRequest}
                 />
             </div>
         </>

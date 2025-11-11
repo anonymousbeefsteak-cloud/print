@@ -24,6 +24,7 @@ const OrderDetailModal: React.FC<{ order: Order; onClose: () => void }> = ({ ord
       <p className="font-semibold text-slate-800">{item.item.name.replace(/半全餐|半套餐/g, '套餐')} (${item.item.price}) <span className="font-normal">x{item.quantity}</span></p>
       <div className="text-xs text-slate-500 pl-2 mt-1 space-y-0.5">
         {item.selectedDonenesses && Object.keys(item.selectedDonenesses).length > 0 && <p>熟度: {Object.entries(item.selectedDonenesses).map(([d, q]) => `${d}x${q}`).join(', ')}</p>}
+        {item.selectedComponent && Object.keys(item.selectedComponent).length > 0 && <p>炸物選擇: {Object.entries(item.selectedComponent).map(([c, q]) => `${c}x${q}`).join(', ')}</p>}
         {item.selectedSideChoices && Object.keys(item.selectedSideChoices).length > 0 && <p>簡餐附餐: {Object.entries(item.selectedSideChoices).map(([d, q]) => `${d}x${q}`).join(', ')}</p>}
         {item.selectedMultiChoice && Object.keys(item.selectedMultiChoice).length > 0 && <p>口味: {Object.entries(item.selectedMultiChoice).map(([d, q]) => `${d}x${q}`).join(', ')}</p>}
         {item.selectedDrinks && Object.keys(item.selectedDrinks).length > 0 && <p>飲料: {Object.entries(item.selectedDrinks).map(([d, q]) => `${d}x${q}`).join(', ')}</p>}

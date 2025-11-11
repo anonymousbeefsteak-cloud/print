@@ -159,6 +159,7 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ isOpen, onSto
   const optionSections: { key: keyof OptionsData, title: string }[] = [
     { key: 'sauces', title: '主菜沾醬' },
     { key: 'coldNoodles', title: '涼麵口味' },
+    { key: 'simpleMeals', title: '簡餐主餐' },
     { key: 'pastasA', title: '義大利麵主食 (A區)' },
     { key: 'pastasB', title: '義大利麵醬料 (B區)' },
     { key: 'dessertsA', title: '甜品 (A區)' },
@@ -234,7 +235,7 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ isOpen, onSto
         <div className="space-y-6">
              <h2 className="text-xl font-bold text-slate-800 border-b-2 border-slate-300 pb-2">可選項目</h2>
             {initialOptions && optionSections.map(section => {
-                const optionsArray = initialOptions[section.key] as Option[];
+                const optionsArray = initialOptions[section.key] as Option[] | undefined;
                 if (!Array.isArray(optionsArray) || optionsArray.length === 0) return null;
                 
                 return (
