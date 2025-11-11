@@ -249,12 +249,12 @@ const App: React.FC = () => {
                     localStorage.setItem('steakhouse-orders', JSON.stringify(savedOrders.slice(0, 5)));
                 }
 
-                // Clean up state and show confirmation modal
-                setLastOrderId(result.orderId);
-                setLastSuccessfulOrder(orderData);
+                // Bypass confirmation and print directly
+                handlePrintRequest(<PrintableOrder order={orderData} orderId={result.orderId} />);
+                
+                // Cleanup state. The page will reload after printing anyway.
                 setIsCartOpen(false);
                 setCart([]);
-                setIsConfirmationModalOpen(true);
 
             } else {
                 setNotification(`訂單提交失敗: ${result.message || '未知錯誤'}`);
