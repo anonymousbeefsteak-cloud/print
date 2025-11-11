@@ -38,6 +38,8 @@ const App: React.FC = () => {
     const [notification, setNotification] = useState<string | null>(null);
     const [isQuietHours, setIsQuietHours] = useState(false);
 
+    const isNoMaVersion = useMemo(() => window.location.pathname.includes('indexnoma.html'), []);
+
     const fetchData = useCallback(async () => {
         setNotification(null);
         const { menu, addons, options: apiOptions, from, isQuietHours: quietHoursStatus } = await apiService.getMenuAndAddons();
@@ -299,9 +301,11 @@ const App: React.FC = () => {
                     <div className="container mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
                         <h1 className="text-2xl sm:text-3xl font-bold text-green-800 tracking-wider">無名牛排點餐系統</h1>
                         <div className="flex items-center gap-2">
-                            <button onClick={() => setIsAdminDashboardOpen(true)} className="flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium">
-                                <span>管理後台</span>
-                            </button>
+                            {!isNoMaVersion && (
+                                <button onClick={() => setIsAdminDashboardOpen(true)} className="flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium">
+                                    <span>管理後台</span>
+                                </button>
+                            )}
                             <button onClick={() => setIsQueryModalOpen(true)} className="flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium">
                                 <SearchIcon className="h-4 w-4"/>
                                 <span>查詢訂單</span>
