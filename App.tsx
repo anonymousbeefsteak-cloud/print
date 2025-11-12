@@ -6,6 +6,7 @@ import Menu from './components/Menu';
 import ItemModal from './components/ItemModal';
 import Cart from './components/Cart';
 import OrderQueryModal from './components/OrderQueryModal';
+import { AdminDashboard } from './components/AdminDashboard';
 import WelcomeModal from './components/WelcomeModal';
 import AIAssistantModal from './components/AIAssistantModal';
 import ConfirmationModal from './components/ConfirmationModal';
@@ -18,6 +19,7 @@ const App: React.FC = () => {
     const [selectedItem, setSelectedItem] = useState<{ item: MenuItem, category: MenuCategory } | null>(null);
     const [editingCartItem, setEditingCartItem] = useState<CartItem | null>(null);
     const [isQueryModalOpen, setIsQueryModalOpen] = useState(false);
+    const [isAdminDashboardOpen, setIsAdminDashboardOpen] = useState(false);
     const [isEditingFromCart, setIsEditingFromCart] = useState(false);
     const [printContent, setPrintContent] = useState<React.ReactNode | null>(null);
     const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
@@ -57,14 +59,18 @@ const App: React.FC = () => {
             setNotification('無法連接伺服器，目前顯示的是離線菜單。');
         }
     }, []);
+
+    const handleCloseConfirmation = useCallback(() => {
+        setIsConfirmationModalOpen(false);
+        window.location.reload();
+    }, []);
     
     useEffect(() => {
         if (printContent) {
             const handleAfterPrint = () => {
-                // After printing, clear the content and reload the page.
+                // After printing, clear the content. Then, either close the confirmation
+                // modal (which reloads) or reload the page directly for other print jobs.
                 setPrintContent(null);
-                // The confirmation modal handles its own closing/reloading now.
-                // No need to reload here unless it's a direct print from admin.
                 if (isConfirmationModalOpen) {
                    handleCloseConfirmation();
                 } else {
@@ -83,7 +89,7 @@ const App: React.FC = () => {
                 window.removeEventListener('afterprint', handleAfterPrint);
             };
         }
-    }, [printContent]);
+    }, [printContent, isConfirmationModalOpen, handleCloseConfirmation]);
 
     const handlePrintRequest = (content: React.ReactNode) => {
         setPrintContent(content);
@@ -253,9 +259,8 @@ const App: React.FC = () => {
                     localStorage.setItem('steakhouse-orders', JSON.stringify(savedOrders.slice(0, 5)));
                 }
 
-                setLastOrderId(result.orderId);
-                setLastSuccessfulOrder(orderData);
-                setIsConfirmationModalOpen(true);
+                // Directly trigger printing
+                handlePrintRequest(<PrintableOrder order={orderData} orderId={result.orderId} />);
                 
                 // Cleanup state
                 setIsCartOpen(false);
@@ -272,11 +277,6 @@ const App: React.FC = () => {
         } finally {
             setIsSubmitting(false);
         }
-    };
-
-    const handleCloseConfirmation = () => {
-        setIsConfirmationModalOpen(false);
-        window.location.reload();
     };
 
     if (loading) {
@@ -304,6 +304,9 @@ const App: React.FC = () => {
                     <div className="container mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
                         <h1 className="text-2xl sm:text-3xl font-bold text-green-800 tracking-wider">無名牛排點餐系統</h1>
                         <div className="flex items-center gap-2">
+                            <button onClick={() => setIsAdminDashboardOpen(true)} className="flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium">
+                                <span>管理後台</span>
+                            </button>
                             <button onClick={() => setIsQueryModalOpen(true)} className="flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium">
                                 <SearchIcon className="h-4 w-4"/>
                                 <span>查詢訂單</span>
@@ -379,6 +382,13 @@ const App: React.FC = () => {
                 <OrderQueryModal
                     isOpen={isQueryModalOpen}
                     onClose={() => setIsQueryModalOpen(false)}
+                />
+                
+                <AdminDashboard 
+                    isOpen={isAdminDashboardOpen}
+                    onClose={() => setIsAdminDashboardOpen(false)}
+                    onPrintRequest={handlePrintRequest}
+                    onStoreUpdate={fetchData}
                 />
                 
                 <AIAssistantModal
