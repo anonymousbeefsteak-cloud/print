@@ -39,7 +39,7 @@ export interface MenuItemCustomizations {
 export interface MenuItem {
   id: string;
   name: string;
-  shortName?: string;
+  itemShortName?: string;
   weight?: string;
   price: number;
   description?: string;
@@ -53,7 +53,7 @@ export interface MenuCategory {
 }
 
 export interface Addon {
-  id: string;
+  id:string;
   name: string;
   price: number;
   category: string;

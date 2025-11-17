@@ -4,34 +4,34 @@ export const MENU_DATA: MenuCategory[] = [
   {
     title: "套餐",
     items: [
-      { id: 'set-1', name: '板腱牛排+脆皮炸雞或炸魚套餐', shortName: '板雞3+4套餐/板魚3+4套餐', weight: '7oz', price: 299, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: true, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2, componentChoice: { title: '炸物選擇', options: ['脆皮炸雞', '炸魚'] } }, isAvailable: true },
-      { id: 'set-2', name: '板腱牛排+脆皮炸雞或炸魚套餐', shortName: '板雞3+4套餐/板魚3+4套餐', weight: '10oz', price: 399, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: true, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2, componentChoice: { title: '炸物選擇', options: ['脆皮炸雞', '炸魚'] } }, isAvailable: true },
-      { id: 'set-3', name: '板腱牛排+脆皮炸雞或炸魚套餐', shortName: '板雞3+4套餐/板魚3+4套餐', weight: '14oz', price: 499, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: true, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2, componentChoice: { title: '炸物選擇', options: ['脆皮炸雞', '炸魚'] } }, isAvailable: true },
-      { id: 'set-4', name: '上蓋牛排+脆皮炸雞或炸魚套餐', shortName: '上雞3+4套餐/上魚3+4套餐', weight: '7oz', price: 299, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: true, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2, componentChoice: { title: '炸物選擇', options: ['脆皮炸雞', '炸魚'] } }, isAvailable: true },
-      { id: 'set-5', name: '上蓋牛排+脆皮炸雞或炸魚套餐', shortName: '上雞3+4套餐/上魚3+4套餐', weight: '10oz', price: 399, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: true, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2, componentChoice: { title: '炸物選擇', options: ['脆皮炸雞', '炸魚'] } }, isAvailable: true },
-      { id: 'set-6', name: '板腱牛排套餐', shortName: '板腱套餐', weight: '12oz', price: 499, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: true, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
-      { id: 'set-7', name: '上蓋牛排套餐', shortName: '上蓋套餐', weight: '12oz', price: 499, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: true, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
-      { id: 'set-8', name: '香煎櫻桃鴨胸套餐', shortName: '鴨胸套餐', weight: '10oz', price: 399, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: false, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
-      { id: 'set-9', name: '香煎鮮嫩魚套餐', shortName: '煎魚套餐', weight: '10oz', price: 320, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: false, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
-      { id: 'set-10', name: '香煎鮮嫩雞腿套餐', shortName: '雞腿套餐', weight: '10oz', price: 250, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: false, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
-      { id: 'set-11', name: '香煎美味豬排套餐', shortName: '豬排套餐', weight: '10oz', price: 299, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: false, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
-      { id: 'set-12', name: '英式炸魚套餐', shortName: '炸魚套餐', weight: '10oz', price: 250, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: false, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
-      { id: 'set-13', name: '日式豬排套餐', shortName: '日豬套餐', weight: '10oz', price: 250, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: false, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
+      { id: 'set-1', name: '板腱牛排+脆皮炸雞或炸魚套餐', itemShortName: '板腱牛+雞/魚餐', weight: '7oz', price: 299, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: true, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2, componentChoice: { title: '炸物選擇', options: ['脆皮炸雞', '炸魚'] } }, isAvailable: true },
+      { id: 'set-2', name: '板腱牛排+脆皮炸雞或炸魚套餐', itemShortName: '板腱牛+雞/魚餐', weight: '10oz', price: 399, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: true, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2, componentChoice: { title: '炸物選擇', options: ['脆皮炸雞', '炸魚'] } }, isAvailable: true },
+      { id: 'set-3', name: '板腱牛排+脆皮炸雞或炸魚套餐', itemShortName: '板腱牛+雞/魚餐', weight: '14oz', price: 499, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: true, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2, componentChoice: { title: '炸物選擇', options: ['脆皮炸雞', '炸魚'] } }, isAvailable: true },
+      { id: 'set-4', name: '上蓋牛排+脆皮炸雞或炸魚套餐', itemShortName: '上蓋牛+雞/魚餐', weight: '7oz', price: 299, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: true, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2, componentChoice: { title: '炸物選擇', options: ['脆皮炸雞', '炸魚'] } }, isAvailable: true },
+      { id: 'set-5', name: '上蓋牛排+脆皮炸雞或炸魚套餐', itemShortName: '上蓋牛+雞/魚餐', weight: '10oz', price: 399, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: true, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2, componentChoice: { title: '炸物選擇', options: ['脆皮炸雞', '炸魚'] } }, isAvailable: true },
+      { id: 'set-6', name: '板腱牛排套餐', itemShortName: '板腱牛套餐', weight: '12oz', price: 499, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: true, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
+      { id: 'set-7', name: '上蓋牛排套餐', itemShortName: '上蓋牛套餐', weight: '12oz', price: 499, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: true, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
+      { id: 'set-8', name: '香煎櫻桃鴨胸套餐', itemShortName: '鴨胸套餐', weight: '10oz', price: 399, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: false, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
+      { id: 'set-9', name: '香煎鮮嫩魚套餐', itemShortName: '香煎魚套餐', weight: '10oz', price: 320, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: false, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
+      { id: 'set-10', name: '香煎鮮嫩雞腿套餐', itemShortName: '雞腿套餐', weight: '10oz', price: 250, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: false, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
+      { id: 'set-11', name: '香煎美味豬排套餐', itemShortName: '豬排套餐', weight: '10oz', price: 299, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: false, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
+      { id: 'set-12', name: '英式炸魚套餐', itemShortName: '炸魚套餐', weight: '10oz', price: 250, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: false, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
+      { id: 'set-13', name: '日式豬排套餐', itemShortName: '日豬套餐', weight: '10oz', price: 250, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: false, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
     ]
   },
   {
     title: "組合餐",
     items: [
-      { id: 'combo-1', name: '日豬、雞腿、上蓋組合餐', shortName: '日豬+雞+上蓋', weight: '15oz', price: 529, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: true, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
-      { id: 'combo-2', name: '炸魚、雞腿、板腱組合餐', shortName: '炸魚+雞+板腱', weight: '15oz', price: 529, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: true, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2, componentChoice: { title: '炸物選擇', options: ['脆皮炸雞', '炸魚'] } }, isAvailable: true },
-      { id: 'combo-3', name: '煎魚、鴨胸、豬排組合餐', shortName: '煎魚+鴨+豬', weight: '15oz', price: 529, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: false, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
-      { id: 'combo-4', name: '鴨胸、煎魚、上蓋組合餐', shortName: '鴨+魚+上蓋', weight: '15oz', price: 599, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: true, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
+      { id: 'combo-1', name: '日豬、雞腿、上蓋組合餐', itemShortName: '日豬雞上蓋餐', weight: '15oz', price: 529, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: true, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
+      { id: 'combo-2', name: '炸魚、雞腿、板腱組合餐', itemShortName: '炸魚雞板腱餐', weight: '15oz', price: 529, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: true, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2, componentChoice: { title: '炸物選擇', options: ['脆皮炸雞', '炸魚'] } }, isAvailable: true },
+      { id: 'combo-3', name: '煎魚、鴨胸、豬排組合餐', itemShortName: '魚鴨豬組合餐', weight: '15oz', price: 529, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: false, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
+      { id: 'combo-4', name: '鴨胸、煎魚、上蓋組合餐', itemShortName: '鴨魚上蓋餐', weight: '15oz', price: 599, description: "附:①日湯②麵包③主餐④脆薯⑤飲料", customizations: { doneness: true, sauceChoice: true, drinkChoice: true, notes: true, saucesPerItem: 2 }, isAvailable: true },
     ]
   },
   {
     title: "簡餐",
     items: [
-      { id: 'simple-meal-set', name: '簡餐套餐', shortName: '簡餐套餐', price: 175, description: "套餐附:①日湯 ②主餐 ③脆薯 ④甜品 ⑤飲料", customizations: { 
+      { id: 'simple-meal-set', name: '簡餐套餐', itemShortName: '簡餐套餐', price: 175, description: "套餐附:①日湯 ②主餐 ③脆薯 ④甜品 ⑤飲料", customizations: { 
         drinkChoice: true, 
         notes: true, 
         multiChoice: { 
@@ -39,7 +39,7 @@ export const MENU_DATA: MenuCategory[] = [
           options: ["黃金脆皮炸雞塊", "黃金泡菜脆皮雞塊吃到堡", "華夫蘋果沙拉雞塊吃到堡", "蛋沙拉脆皮雞塊吃到堡", "波士頓花生冰淇淋吃到堡", "溶岩巧克佐冰淇淋吃到堡"] 
         }
       }, isAvailable: true },
-      { id: 'simple-meal-single', name: '簡餐單點', shortName: '簡餐單點', price: 75, description: "簡餐附(選二)→①日湯 ②脆薯 ③甜品 ④飲料", customizations: { 
+      { id: 'simple-meal-single', name: '簡餐單點', itemShortName: '簡餐單點', price: 75, description: "簡餐附(選二)→①日湯 ②脆薯 ③甜品 ④飲料", customizations: { 
         notes: true, 
         multiChoice: { 
           title: '主餐選擇', 
@@ -56,33 +56,33 @@ export const MENU_DATA: MenuCategory[] = [
   {
     title: "炸物&漢堡",
     items: [
-      { id: 'fried-chicken-single', name: '脆皮炸雞塊', shortName: '脆雞塊', price: 75, description: "單點", customizations: { notes: true }, isAvailable: true },
-      { id: 'fried-chicken-gold-single', name: '黃金脆皮炸雞塊', shortName: '黃金雞塊', price: 75, description: "單點", customizations: { notes: true }, isAvailable: true },
-      { id: 'burger-kimchi-single', name: '黃金泡菜脆皮雞塊吃到堡', shortName: '泡菜雞堡', price: 80, description: "單點", customizations: { notes: true }, isAvailable: true },
-      { id: 'burger-waffle-apple-single', name: '華夫蘋果沙拉雞塊吃到堡', shortName: '蘋沙雞堡', price: 80, description: "單點", customizations: { notes: true }, isAvailable: true },
-      { id: 'burger-egg-salad-single', name: '蛋沙拉脆皮雞塊吃到堡', shortName: '蛋沙雞堡', price: 80, description: "單點", customizations: { notes: true }, isAvailable: true },
-      { id: 'burger-peanut-icecream-single', name: '波士頓花生冰淇淋吃到堡', shortName: '花生雞堡', price: 80, description: "單點", customizations: { notes: true }, isAvailable: true },
-      { id: 'burger-chocolate-icecream-single', name: '溶岩巧克佐冰淇淋吃到堡', shortName: '巧克雞堡', price: 80, description: "單點", customizations: { notes: true }, isAvailable: true },
-      { id: 'fried-chicken-set', name: '脆皮炸雞塊套餐', shortName: '脆雞塊套餐', price: 175, description: "附:①日湯②主餐③脆薯④甜品⑤飲料", customizations: { drinkChoice: true, notes: true }, isAvailable: true },
-      { id: 'fried-chicken-gold-set', name: '黃金脆皮炸雞塊套餐', shortName: '黃金雞塊套餐', price: 175, description: "附:①日湯②主餐③脆薯④甜品⑤飲料", customizations: { drinkChoice: true, notes: true }, isAvailable: true },
-      { id: 'burger-kimchi-set', name: '黃金泡菜脆皮雞塊吃到堡套餐', shortName: '泡菜雞堡套餐', price: 175, description: "附:①日湯②主餐③脆薯④甜品⑤飲料", customizations: { drinkChoice: true, notes: true }, isAvailable: true },
-      { id: 'burger-waffle-apple-set', name: '華夫蘋果沙拉雞塊吃到堡套餐', shortName: '蘋沙雞堡套餐', price: 175, description: "附:①日湯②主餐③脆薯④甜品⑤飲料", customizations: { drinkChoice: true, notes: true }, isAvailable: true },
-      { id: 'burger-egg-salad-set', name: '蛋沙拉脆皮雞塊吃到堡套餐', shortName: '蛋沙雞堡套餐', price: 175, description: "附:①日湯②主餐③脆薯④甜品⑤飲料", customizations: { drinkChoice: true, notes: true }, isAvailable: true },
-      { id: 'burger-peanut-icecream-set', name: '波士頓花生冰淇淋吃到堡套餐', shortName: '花生雞堡套餐', price: 175, description: "附:①日湯②主餐③脆薯④雞塊⑤飲料", customizations: { drinkChoice: true, notes: true }, isAvailable: true },
-      { id: 'burger-chocolate-icecream-set', name: '溶岩巧克佐冰淇淋吃到堡套餐', shortName: '巧克雞堡套餐', price: 175, description: "附:①日湯②主餐③脆薯④雞塊⑤飲料", customizations: { drinkChoice: true, notes: true }, isAvailable: true },
+      { id: 'fried-chicken-single', name: '脆皮炸雞塊', itemShortName: '脆皮雞塊', price: 75, description: "單點", customizations: { notes: true }, isAvailable: true },
+      { id: 'fried-chicken-gold-single', name: '黃金脆皮炸雞塊', itemShortName: '黃金雞塊', price: 75, description: "單點", customizations: { notes: true }, isAvailable: true },
+      { id: 'burger-kimchi-single', name: '黃金泡菜脆皮雞塊吃到堡', itemShortName: '泡菜雞塊堡', price: 80, description: "單點", customizations: { notes: true }, isAvailable: true },
+      { id: 'burger-waffle-apple-single', name: '華夫蘋果沙拉雞塊吃到堡', itemShortName: '蘋果沙拉雞堡', price: 80, description: "單點", customizations: { notes: true }, isAvailable: true },
+      { id: 'burger-egg-salad-single', name: '蛋沙拉脆皮雞塊吃到堡', itemShortName: '蛋沙拉雞堡', price: 80, description: "單點", customizations: { notes: true }, isAvailable: true },
+      { id: 'burger-peanut-icecream-single', name: '波士頓花生冰淇淋吃到堡', itemShortName: '花生冰淇淋堡', price: 80, description: "單點", customizations: { notes: true }, isAvailable: true },
+      { id: 'burger-chocolate-icecream-single', name: '溶岩巧克佐冰淇淋吃到堡', itemShortName: '熔岩巧克力堡', price: 80, description: "單點", customizations: { notes: true }, isAvailable: true },
+      { id: 'fried-chicken-set', name: '脆皮炸雞塊套餐', itemShortName: '脆皮雞塊套餐', price: 175, description: "附:①日湯②主餐③脆薯④甜品⑤飲料", customizations: { drinkChoice: true, notes: true }, isAvailable: true },
+      { id: 'fried-chicken-gold-set', name: '黃金脆皮炸雞塊套餐', itemShortName: '黃金雞塊套餐', price: 175, description: "附:①日湯②主餐③脆薯④甜品⑤飲料", customizations: { drinkChoice: true, notes: true }, isAvailable: true },
+      { id: 'burger-kimchi-set', name: '黃金泡菜脆皮雞塊吃到堡套餐', itemShortName: '泡菜雞塊堡套餐', price: 175, description: "附:①日湯②主餐③脆薯④甜品⑤飲料", customizations: { drinkChoice: true, notes: true }, isAvailable: true },
+      { id: 'burger-waffle-apple-set', name: '華夫蘋果沙拉雞塊吃到堡套餐', itemShortName: '蘋果沙拉雞堡餐', price: 175, description: "附:①日湯②主餐③脆薯④甜品⑤飲料", customizations: { drinkChoice: true, notes: true }, isAvailable: true },
+      { id: 'burger-egg-salad-set', name: '蛋沙拉脆皮雞塊吃到堡套餐', itemShortName: '蛋沙拉雞堡餐', price: 175, description: "附:①日湯②主餐③脆薯④甜品⑤飲料", customizations: { drinkChoice: true, notes: true }, isAvailable: true },
+      { id: 'burger-peanut-icecream-set', name: '波士頓花生冰淇淋吃到堡套餐', itemShortName: '花生冰堡套餐', price: 175, description: "附:①日湯②主餐③脆薯④雞塊⑤飲料", customizations: { drinkChoice: true, notes: true }, isAvailable: true },
+      { id: 'burger-chocolate-icecream-set', name: '溶岩巧克佐冰淇淋吃到堡套餐', itemShortName: '熔岩巧克堡套餐', price: 175, description: "附:①日湯②主餐③脆薯④雞塊⑤飲料", customizations: { drinkChoice: true, notes: true }, isAvailable: true },
     ]
   },
   {
     title: "涼麵",
     items: [
-      { id: 'cold-noodle-single', name: '涼麵', shortName: '涼麵', price: 75, description: "單點。請選擇口味", customizations: { 
+      { id: 'cold-noodle-single', name: '涼麵', itemShortName: '涼麵', price: 75, description: "單點。請選擇口味", customizations: { 
         multiChoice: { 
           title: '涼麵口味', 
           options: ["日式涼麵", "泰式涼麵", "沙茶涼麵", "蒜香涼麵", "金瓜涼麵", "巴薩米醋涼麵", "香葱涼麵", "凱撒涼麵", "橙汁涼麵", "黑胡椒涼麵", "台式涼麵", "BBQ涼麵"] 
         }, 
         notes: true 
       }, isAvailable: true },
-      { id: 'cold-noodle-set', name: '涼麵套餐', shortName: '涼麵套餐', price: 175, description: "附:①日湯②主餐③脆薯④甜品⑤飲料", customizations: { 
+      { id: 'cold-noodle-set', name: '涼麵套餐', itemShortName: '涼麵套餐', price: 175, description: "附:①日湯②主餐③脆薯④甜品⑤飲料", customizations: { 
         multiChoice: { 
           title: '涼麵口味', 
           options: ["日式涼麵", "泰式涼麵", "沙茶涼麵", "蒜香涼麵", "金瓜涼麵", "巴薩米醋涼麵", "香葱涼麵", "凱撒涼麵", "橙汁涼麵", "黑胡椒涼麵", "台式涼麵", "BBQ涼麵"] 
@@ -95,7 +95,7 @@ export const MENU_DATA: MenuCategory[] = [
   {
     title: "義大利麵",
     items: [
-      { id: 'pasta-choice-single', name: '任選義麵 (簡餐)', shortName: '義麵簡餐', price: 160, description: "簡餐附(選二)→①日湯 ②脆薯 ③甜品 ④飲料", customizations: { 
+      { id: 'pasta-choice-single', name: '任選義麵 (簡餐)', itemShortName: '任選義麵簡餐', price: 160, description: "簡餐附(選二)→①日湯 ②脆薯 ③甜品 ④飲料", customizations: { 
         pastaChoice: true, 
         notes: true, 
         sideChoice: { 
@@ -104,7 +104,7 @@ export const MENU_DATA: MenuCategory[] = [
           choices: 2 
         } 
       }, isAvailable: true },
-      { id: 'pasta-choice-set', name: '任選義麵 (套餐)', shortName: '義麵套餐', price: 220, description: "附:①日湯 ②主餐 ③甜品 ④麵包 ⑤飲料", customizations: { 
+      { id: 'pasta-choice-set', name: '任選義麵 (套餐)', itemShortName: '任選義麵套餐', price: 220, description: "附:①日湯 ②主餐 ③甜品 ④麵包 ⑤飲料", customizations: { 
         pastaChoice: true, 
         drinkChoice: true, 
         notes: true 
@@ -114,11 +114,11 @@ export const MENU_DATA: MenuCategory[] = [
   {
     title: "甜品",
     items: [
-      { id: 'dessert-choice-single', name: '任選甜品', shortName: '任選甜品', price: 99, description: "A區、B區各任選一種。", customizations: { 
+      { id: 'dessert-choice-single', name: '任選甜品', itemShortName: '任選甜品', price: 99, description: "A區、B區各任選一種。", customizations: { 
         dessertChoice: true, 
         notes: true 
       }, isAvailable: true },
-      { id: 'dessert-choice-set', name: '任選甜品套餐', shortName: '甜品套餐', price: 200, description: "附:①日湯②主餐③脆薯④雞塊⑤飲料", customizations: { 
+      { id: 'dessert-choice-set', name: '任選甜品套餐', itemShortName: '任選甜品套餐', price: 200, description: "附:①日湯②主餐③脆薯④雞塊⑤飲料", customizations: { 
         dessertChoice: true, 
         drinkChoice: true, 
         notes: true 

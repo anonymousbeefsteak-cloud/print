@@ -1,5 +1,3 @@
-
-
 import React, { useMemo } from 'react';
 import type { Order, CartItem, OrderData } from '../types';
 
@@ -11,7 +9,6 @@ type PrintableOrderProps = {
 interface AggregatedMeal {
     name: string;
     totalQuantity: number;
-    lineTotalPrice: number;
     donenesses: Map<string, number>;
 }
 
@@ -23,30 +20,18 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
     const aggregated = useMemo(() => {
         const sauces = new Map<string, number>();
         const drinks = new Map<string, number>();
-        const addons = new Map<string, { quantity: number; price: number }>();
+        const addons = new Map<string, { quantity: number }>();
         const meals = new Map<string, AggregatedMeal>();
 
         const getItemDisplayName = (item: CartItem): string => {
-            let name: string;
+            let name = item.item.itemShortName || item.item.name.replace(/半全餐|半套餐/g, '套餐');
     
-            // New logic for items with componentChoice and a slash-separated shortName
-            const hasComponentChoice = item.item.customizations.componentChoice && item.selectedComponent && Object.keys(item.selectedComponent).length > 0;
-            const hasFormattedShortName = item.item.shortName && item.item.shortName.includes('/');
-
-            if (hasComponentChoice && hasFormattedShortName) {
-                const componentChoiceKey = Object.keys(item.selectedComponent!)[0]; // e.g., '脆皮炸雞'
-                const options = item.item.customizations.componentChoice!.options; // e.g., ['脆皮炸雞', '炸魚']
-                const shortNameParts = item.item.shortName!.split('/'); // e.g., ['板雞3+4套餐', '板魚3+4套餐']
-                
-                const selectedIndex = options.indexOf(componentChoiceKey);
-                if (selectedIndex !== -1 && shortNameParts.length === options.length) {
-                    name = shortNameParts[selectedIndex];
-                } else {
-                    // Fallback if something is wrong with the data, e.g. index mismatch
-                    name = (item.item.shortName || item.item.name).replace(/半全餐|半套餐/g, '套餐');
+            if (item.selectedComponent && Object.keys(item.selectedComponent).length > 0) {
+                const componentChoiceKey = Object.keys(item.selectedComponent)[0];
+                const shortComponentKey = componentChoiceKey.replace('脆皮炸雞', '雞').replace('炸魚','魚');
+                if (name.includes('雞/魚')) {
+                    name = name.replace('雞/魚', shortComponentKey);
                 }
-            } else {
-                 name = (item.item.shortName || item.item.name).replace(/半全餐|半套餐/g, '套餐');
             }
             
             if (item.selectedPastas && item.selectedPastas.length > 0) {
@@ -63,7 +48,7 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
             
             if (item.selectedMultiChoice && Object.keys(item.selectedMultiChoice).length > 0) {
                 const flavor = Object.keys(item.selectedMultiChoice)[0];
-                 name = `(${flavor})${name}`;
+                 name = `(${flavor.replace('涼麵', '')})${name}`;
             }
     
             return name;
@@ -76,10 +61,8 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
 
             if (existingMeal) {
                 existingMeal.totalQuantity += item.quantity;
-                existingMeal.lineTotalPrice += item.item.price * item.quantity;
                 if (item.selectedDonenesses) {
                     for (const [level, count] of Object.entries(item.selectedDonenesses)) {
-                        // FIX: Explicitly convert count to a number to prevent operating on 'unknown'.
                         existingMeal.donenesses.set(level, (existingMeal.donenesses.get(level) || 0) + (Number(count) || 0));
                     }
                 }
@@ -87,14 +70,12 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
                 const donenessMap = new Map<string, number>();
                 if (item.selectedDonenesses) {
                     for (const [level, count] of Object.entries(item.selectedDonenesses)) {
-                        // FIX: Explicitly convert count to a number to ensure it's assignable to a Map of numbers.
                         donenessMap.set(level, Number(count) || 0);
                     }
                 }
                 meals.set(key, {
                     name: key,
                     totalQuantity: item.quantity,
-                    lineTotalPrice: item.item.price * item.quantity,
                     donenesses: donenessMap,
                 });
             }
@@ -112,7 +93,7 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
                     if (existing) {
                         existing.quantity += a.quantity;
                     } else {
-                        addons.set(a.name, { quantity: a.quantity, price: a.price });
+                        addons.set(a.name, { quantity: a.quantity });
                     }
                 });
             }
@@ -121,8 +102,8 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
         const formatMap = (map: Map<string, number>) =>
             Array.from(map.entries()).map(([name, quantity]) => `${name} x${quantity}`).join(', ');
 
-        const formatAddonsMap = (map: Map<string, { quantity: number; price: number }>) =>
-            Array.from(map.entries()).map(([name, data]) => `${name.replace(/\s/g, '')} x${data.quantity}($${data.price * data.quantity})`).join(', ');
+        const formatAddonsMap = (map: Map<string, { quantity: number }>) =>
+            Array.from(map.entries()).map(([name, data]) => `${name.replace(/\s/g, '')} x${data.quantity}`).join(', ');
 
         return {
             sauces: formatMap(sauces),
@@ -133,6 +114,9 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
     }, [order.items]);
 
     const finalOrderId = 'id' in order ? order.id : orderId;
+    const orderTypeDisplay = order.orderType === '內用' 
+        ? `內用: ${order.customerInfo.tableNumber || '未指定'}`
+        : '外帶';
     
     const pStyle: React.CSSProperties = { margin: 0, whiteSpace: 'normal', wordBreak: 'break-word', fontSize: '28px', lineHeight: 1.2 };
     const headerStyle: React.CSSProperties = { textAlign: 'center', margin: '2px 0', padding: '2px 0', borderTop: '1px dashed black', fontSize: '28px', lineHeight: 1.2, fontWeight: 'bold' };
@@ -144,7 +128,7 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
 
         return (
             <p key={index} style={pStyle}>
-                {`${meal.name} x ${meal.totalQuantity} ($${meal.lineTotalPrice})`}
+                {`${meal.name} x ${meal.totalQuantity}`}
                 {donenessStr && ` / ${donenessStr}`}
             </p>
         );
@@ -152,9 +136,12 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
 
     return (
         <div style={{ width: '58mm', padding: '0', backgroundColor: 'white', color: 'black', fontFamily: 'monospace' }}>
-            <p style={{...pStyle, textAlign: 'center', fontWeight: 'bold', marginBottom: '4px'}}>套餐附:①日湯②麵包③主餐④脆薯⑤飲料</p>
+            <p style={{...pStyle, textAlign: 'center', fontWeight: 'bold', fontSize: '32px', borderBottom: '1px dashed black', marginBottom: '4px'}}>{orderTypeDisplay}</p>
             <p style={pStyle}>
-                {`訂單號: ${finalOrderId?.slice(-6) || 'xxx'} \u00A0 類型: ${order.orderType} \u00A0 共計$${order.totalPrice}`}
+                {`訂單號: ${finalOrderId?.slice(-6) || 'xxx'}`}
+            </p>
+             <p style={pStyle}>
+                {`時間: ${new Date('createdAt' in order ? order.createdAt : Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}`}
             </p>
             
             {mainMealLines.length > 0 && (

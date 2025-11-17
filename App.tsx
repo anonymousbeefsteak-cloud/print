@@ -9,7 +9,6 @@ import OrderQueryModal from './components/OrderQueryModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import WelcomeModal from './components/WelcomeModal';
 import AIAssistantModal from './components/AIAssistantModal';
-import ConfirmationModal from './components/ConfirmationModal';
 import { CartIcon, RefreshIcon, SearchIcon, SparklesIcon } from './components/icons';
 import { PrintableOrder } from './components/PrintableOrder';
 
@@ -25,10 +24,6 @@ const App: React.FC = () => {
     const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
     const [isAiModalOpen, setIsAiModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
-    const [lastOrderId, setLastOrderId] = useState<string | null>(null);
-    const [lastSuccessfulOrder, setLastSuccessfulOrder] = useState<OrderData | null>(null);
 
     const [menuData, setMenuData] = useState<MenuCategory[]>([]);
     const [addons, setAddons] = useState<Addon[]>([]);
@@ -63,15 +58,8 @@ const App: React.FC = () => {
     useEffect(() => {
         if (printContent) {
             const handleAfterPrint = () => {
-                // After printing, clear the content and reload the page.
                 setPrintContent(null);
-                // The confirmation modal handles its own closing/reloading now.
-                // No need to reload here unless it's a direct print from admin.
-                if (isConfirmationModalOpen) {
-                   handleCloseConfirmation();
-                } else {
-                    window.location.reload();
-                }
+                window.location.reload();
             };
 
             window.addEventListener('afterprint', handleAfterPrint, { once: true });
@@ -254,10 +242,9 @@ const App: React.FC = () => {
                     savedOrders.unshift(result.orderId);
                     localStorage.setItem('steakhouse-orders', JSON.stringify(savedOrders.slice(0, 5)));
                 }
-
-                setLastOrderId(result.orderId);
-                setLastSuccessfulOrder(orderData);
-                setIsConfirmationModalOpen(true);
+                
+                // Automatically trigger printing
+                handlePrintRequest(<PrintableOrder order={orderData} orderId={result.orderId} />);
                 
                 // Cleanup state
                 setIsCartOpen(false);
@@ -274,11 +261,6 @@ const App: React.FC = () => {
         } finally {
             setIsSubmitting(false);
         }
-    };
-
-    const handleCloseConfirmation = () => {
-        setIsConfirmationModalOpen(false);
-        window.location.reload();
     };
 
     if (loading) {
@@ -398,14 +380,6 @@ const App: React.FC = () => {
                     onClose={() => setIsAiModalOpen(false)}
                     menuData={menuData}
                     addons={addons}
-                />
-
-                <ConfirmationModal
-                    isOpen={isConfirmationModalOpen}
-                    onClose={handleCloseConfirmation}
-                    orderId={lastOrderId}
-                    lastSuccessfulOrder={lastSuccessfulOrder}
-                    onPrintRequest={handlePrintRequest}
                 />
             </div>
         </>

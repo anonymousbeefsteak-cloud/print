@@ -1,17 +1,13 @@
 import React from 'react';
-import type { OrderData } from '../types';
 import { CloseIcon, CheckIcon } from './icons';
-import { PrintableOrder } from './PrintableOrder';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
   orderId: string | null;
-  lastSuccessfulOrder: OrderData | null;
-  onPrintRequest: (content: React.ReactNode) => void;
 }
 
-const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, orderId, lastSuccessfulOrder, onPrintRequest }) => {
+const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, orderId }) => {
 
   if (!isOpen) return null;
 
@@ -21,12 +17,6 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, 
     const url = `https://line.me/R/msg/text/?${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };
-  
-  const handlePrint = () => {
-      if (lastSuccessfulOrder) {
-          onPrintRequest(<PrintableOrder order={lastSuccessfulOrder} orderId={orderId} />);
-      }
-  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4" onClick={onClose}>
@@ -44,28 +34,19 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, 
                 <p className="mt-1">此訂單需由店家回覆確認後才算正式成立。請點擊下方按鈕，透過 LINE 分享您的訂單編號以完成訂購程序。</p>
             </div>
         </div>
-        <footer className="px-6 pb-6 space-y-2">
+        <footer className="px-6 pb-6 grid grid-cols-2 gap-3">
             <button 
                 onClick={handleLineShare} 
                 className="w-full bg-green-500 text-white px-4 py-3 rounded-lg hover:bg-green-600 font-bold text-lg"
             >
-                LINE 分享提醒
+                LINE 分享
             </button>
-            <div className="grid grid-cols-2 gap-2">
-              <button 
-                  onClick={handlePrint} 
-                  disabled={!lastSuccessfulOrder}
-                  className="w-full bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-lg hover:bg-slate-300 transition-colors disabled:opacity-50"
-              >
-                  列印訂單摘要
-              </button>
-              <button 
-                  onClick={onClose} 
-                  className="w-full bg-slate-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-slate-700 transition-colors"
-              >
-                  關閉
-              </button>
-            </div>
+            <button 
+                onClick={onClose} 
+                className="w-full bg-slate-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-slate-700 transition-colors"
+            >
+                關閉
+            </button>
         </footer>
       </div>
     </div>
