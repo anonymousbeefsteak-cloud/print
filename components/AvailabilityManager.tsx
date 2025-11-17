@@ -235,6 +235,7 @@ const AvailabilityManager: React.FC<AvailabilityManagerProps> = ({ isOpen, onSto
         <div className="space-y-6">
              <h2 className="text-xl font-bold text-slate-800 border-b-2 border-slate-300 pb-2">可選項目</h2>
             {initialOptions && optionSections.map(section => {
+                // FIX: Explicitly cast the property access to help TypeScript's type inference.
                 const optionsArray = initialOptions[section.key] as Option[] | undefined;
                 if (!Array.isArray(optionsArray) || optionsArray.length === 0) return null;
                 
