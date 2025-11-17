@@ -210,20 +210,34 @@ const Cart: React.FC<CartProps> = ({ isOpen, onClose, cartItems, onUpdateQuantit
 
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
-            const simplifiedCart = cartItems.map(item => ({
-                餐點: item.item.name,
-                數量: item.quantity,
-                選項: [
-                    item.selectedDonenesses ? `熟度: ${Object.keys(item.selectedDonenesses).join(',')}` : null,
-                    item.selectedAddons && item.selectedAddons.length > 0 ? `加點: ${item.selectedAddons.map(a => a.name).join(',')}` : null,
-                ].filter(Boolean).join('; ')
-            }));
+            
+            const simplifiedCart = cartItems.map(item => {
+                const options = [
+                    item.selectedDonenesses && Object.keys(item.selectedDonenesses).length > 0 ? `熟度: ${Object.entries(item.selectedDonenesses).map(([d, q]) => `${d}x${q}`).join(',')}` : null,
+                    item.selectedSauces && item.selectedSauces.length > 0 ? `醬料: ${item.selectedSauces.map(s => `${s.name}x${s.quantity}`).join(',')}` : null,
+                    item.selectedDrinks && Object.keys(item.selectedDrinks).length > 0 ? `飲料: ${Object.entries(item.selectedDrinks).map(([d, q]) => `${d}x${q}`).join(',')}` : null,
+                    item.selectedDesserts && item.selectedDesserts.length > 0 ? `甜品: ${item.selectedDesserts.map(d => `${d.name}x${d.quantity}`).join(',')}` : null,
+                    item.selectedPastas && item.selectedPastas.length > 0 ? `義大利麵: ${item.selectedPastas.map(p => `${p.name}x${p.quantity}`).join(',')}` : null,
+                    item.selectedComponent && Object.keys(item.selectedComponent).length > 0 ? `主餐附餐: ${Object.keys(item.selectedComponent).join(',')}` : null,
+                    item.selectedSideChoices && Object.keys(item.selectedSideChoices).length > 0 ? `簡餐附餐: ${Object.keys(item.selectedSideChoices).join(',')}` : null,
+                    item.selectedMultiChoice && Object.keys(item.selectedMultiChoice).length > 0 ? `口味: ${Object.keys(item.selectedMultiChoice).join(',')}` : null,
+                    item.selectedAddons && item.selectedAddons.length > 0 ? `加購: ${item.selectedAddons.map(a => `${a.name}x${a.quantity}`).join(',')}` : null,
+                    item.selectedNotes ? `備註: ${item.selectedNotes}`: null
+                ].filter(Boolean);
+
+                return {
+                    餐點: item.item.name,
+                    數量: item.quantity,
+                    總價: item.totalPrice,
+                    選項: options.join('; ')
+                };
+            });
 
             const response = await ai.models.generateContent({
                 model: 'gemini-2.5-flash',
-                contents: `這是我的購物車內容：${JSON.stringify(simplifiedCart)}。請檢查我的訂單並提供一兩個有用的建議。`,
+                contents: `這是我的購物車內容：${JSON.stringify(simplifiedCart)}。總金額是 $${totalPrice}。請檢查我的訂單並提供一兩個有用的建議。`,
                 config: {
-                    systemInstruction: `你是一位專業且友善的「無名牛排」點餐小幫手。你的任務是分析顧客的購物車，並根據常見搭配或可能的遺漏，提供簡短、友善且有幫助的建議，以提升顧客的用餐體驗。例如，建議為沒有飲料的套餐加點飲料，或推薦熱門的附加項目。請保持建議的建設性與禮貌，不要強迫推銷。回答請使用繁體中文，並以「小提醒：」開頭。`,
+                    systemInstruction: `你是一位專業且友善的「無名牛排」點餐小幫手。你的任務是分析顧客的購物車 JSON 資料，並根據常見搭配或可能的遺漏，提供簡短、友善且有幫助的建議，以提升顧客的用餐體驗。例如，如果顧客點了牛排但沒有選醬料，可以推薦醬料。如果點了套餐卻沒有選飲料，可以提醒他們。如果點了很多炸物，可以推薦飲料解膩。分析「選項」欄位來了解顧客的選擇。請保持建議的建設性與禮貌，不要強迫推銷。回答請使用繁體中文，並以「小提醒：」開頭。`,
                 },
             });
 
