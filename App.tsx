@@ -59,18 +59,14 @@ const App: React.FC = () => {
             setNotification('無法連接伺服器，目前顯示的是離線菜單。');
         }
     }, []);
-
-    const handleCloseConfirmation = useCallback(() => {
-        setIsConfirmationModalOpen(false);
-        window.location.reload();
-    }, []);
     
     useEffect(() => {
         if (printContent) {
             const handleAfterPrint = () => {
-                // After printing, clear the content. Then, either close the confirmation
-                // modal (which reloads) or reload the page directly for other print jobs.
+                // After printing, clear the content and reload the page.
                 setPrintContent(null);
+                // The confirmation modal handles its own closing/reloading now.
+                // No need to reload here unless it's a direct print from admin.
                 if (isConfirmationModalOpen) {
                    handleCloseConfirmation();
                 } else {
@@ -89,7 +85,7 @@ const App: React.FC = () => {
                 window.removeEventListener('afterprint', handleAfterPrint);
             };
         }
-    }, [printContent, isConfirmationModalOpen, handleCloseConfirmation]);
+    }, [printContent]);
 
     const handlePrintRequest = (content: React.ReactNode) => {
         setPrintContent(content);
@@ -259,8 +255,9 @@ const App: React.FC = () => {
                     localStorage.setItem('steakhouse-orders', JSON.stringify(savedOrders.slice(0, 5)));
                 }
 
-                // Directly trigger printing
-                handlePrintRequest(<PrintableOrder order={orderData} orderId={result.orderId} />);
+                setLastOrderId(result.orderId);
+                setLastSuccessfulOrder(orderData);
+                setIsConfirmationModalOpen(true);
                 
                 // Cleanup state
                 setIsCartOpen(false);
@@ -277,6 +274,11 @@ const App: React.FC = () => {
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleCloseConfirmation = () => {
+        setIsConfirmationModalOpen(false);
+        window.location.reload();
     };
 
     if (loading) {

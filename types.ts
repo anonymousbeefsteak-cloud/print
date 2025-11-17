@@ -39,6 +39,7 @@ export interface MenuItemCustomizations {
 export interface MenuItem {
   id: string;
   name: string;
+  shortName?: string;
   weight?: string;
   price: number;
   description?: string;
@@ -148,17 +149,20 @@ export interface OrderSummary {
     timestamp: string;
 }
 
-// FIX: Add SalesStatistics type for admin dashboard analytics.
+export interface PopularItem {
+    name: string;
+    quantity: number;
+    revenue: number;
+}
+
+export interface SalesTrendData {
+    date: string; 
+    revenue: number;
+}
+
 export interface SalesStatistics {
     totalRevenue: number;
     orderCount: number;
-    popularItems: {
-        name: string;
-        quantity: number;
-        revenue: number;
-    }[];
-    salesTrend: {
-        date: string;
-        revenue: number;
-    }[];
+    popularItems: PopularItem[];
+    salesTrend: SalesTrendData[];
 }

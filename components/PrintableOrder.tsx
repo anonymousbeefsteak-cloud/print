@@ -27,17 +27,26 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({ order, orderId }
         const meals = new Map<string, AggregatedMeal>();
 
         const getItemDisplayName = (item: CartItem): string => {
-            let name = item.item.name.replace(/半全餐|半套餐/g, '套餐');
+            let name: string;
     
-            if (item.selectedComponent && Object.keys(item.selectedComponent).length > 0) {
-                const componentChoiceKey = Object.keys(item.selectedComponent)[0];
-                const options = item.item.customizations.componentChoice?.options;
-                if (options && options.length > 0) {
-                    const placeholder = options.join('或');
-                    if (name.includes(placeholder)) {
-                        name = name.replace(placeholder, componentChoiceKey);
-                    }
+            // New logic for items with componentChoice and a slash-separated shortName
+            const hasComponentChoice = item.item.customizations.componentChoice && item.selectedComponent && Object.keys(item.selectedComponent).length > 0;
+            const hasFormattedShortName = item.item.shortName && item.item.shortName.includes('/');
+
+            if (hasComponentChoice && hasFormattedShortName) {
+                const componentChoiceKey = Object.keys(item.selectedComponent!)[0]; // e.g., '脆皮炸雞'
+                const options = item.item.customizations.componentChoice!.options; // e.g., ['脆皮炸雞', '炸魚']
+                const shortNameParts = item.item.shortName!.split('/'); // e.g., ['板雞3+4套餐', '板魚3+4套餐']
+                
+                const selectedIndex = options.indexOf(componentChoiceKey);
+                if (selectedIndex !== -1 && shortNameParts.length === options.length) {
+                    name = shortNameParts[selectedIndex];
+                } else {
+                    // Fallback if something is wrong with the data, e.g. index mismatch
+                    name = (item.item.shortName || item.item.name).replace(/半全餐|半套餐/g, '套餐');
                 }
+            } else {
+                 name = (item.item.shortName || item.item.name).replace(/半全餐|半套餐/g, '套餐');
             }
             
             if (item.selectedPastas && item.selectedPastas.length > 0) {
