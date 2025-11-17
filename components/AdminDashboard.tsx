@@ -1,347 +1,83 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import type { Order, OrderStatus, CartItem, SalesStatistics } from '../types';
-import { apiService } from '../services/apiService';
-import { CloseIcon, RefreshIcon } from './icons';
-import { PrintableOrder } from './PrintableOrder';
-import AvailabilityManager from './AvailabilityManager';
+import React from 'react';
 
-const getStatusColor = (status: OrderStatus) => {
-    switch (status) {
-        case '待店長確認': return 'bg-orange-100 text-orange-800 border-orange-300';
-        case '待處理': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-        case '製作中': return 'bg-blue-100 text-blue-800 border-blue-300';
-        case '可以取餐': return 'bg-purple-100 text-purple-800 border-purple-300';
-        case '已完成': return 'bg-green-100 text-green-800 border-green-300';
-        default: return 'bg-red-100 text-red-800 border-red-300';
-    }
-};
-
-const ORDER_STATUSES: OrderStatus[] = ['待店長確認', '待處理', '製作中', '可以取餐', '已完成'];
-
-const OrderDetailModal: React.FC<{ order: Order; onClose: () => void }> = ({ order, onClose }) => {
-  const renderOrderItem = (item: CartItem, index: number) => (
-    <div key={item.cartId || index} className="py-2 border-b border-slate-200 last:border-b-0">
-      <p className="font-semibold text-slate-800">{item.item.name.replace(/半全餐|半套餐/g, '套餐')} (${item.item.price}) <span className="font-normal">x{item.quantity}</span></p>
-      <div className="text-xs text-slate-500 pl-2 mt-1 space-y-0.5">
-        {item.selectedDonenesses && Object.keys(item.selectedDonenesses).length > 0 && <p>熟度: {Object.entries(item.selectedDonenesses).map(([d, q]) => `${d}x${q}`).join(', ')}</p>}
-        {item.selectedComponent && Object.keys(item.selectedComponent).length > 0 && <p>炸物選擇: {Object.entries(item.selectedComponent).map(([c, q]) => `${c}x${q}`).join(', ')}</p>}
-        {item.selectedSideChoices && Object.keys(item.selectedSideChoices).length > 0 && <p>簡餐附餐: {Object.entries(item.selectedSideChoices).map(([d, q]) => `${d}x${q}`).join(', ')}</p>}
-        {item.selectedMultiChoice && Object.keys(item.selectedMultiChoice).length > 0 && <p>口味: {Object.entries(item.selectedMultiChoice).map(([d, q]) => `${d}x${q}`).join(', ')}</p>}
-        {item.selectedDrinks && Object.keys(item.selectedDrinks).length > 0 && <p>飲料: {Object.entries(item.selectedDrinks).map(([d, q]) => `${d}x${q}`).join(', ')}</p>}
-        {item.selectedSauces && item.selectedSauces.length > 0 && <p>醬料: {item.selectedSauces.map(s => `${s.name}x${s.quantity}`).join(', ')}</p>}
-        {item.selectedDesserts && item.selectedDesserts.length > 0 && <p>甜品: {item.selectedDesserts.map(d => `${d.name}x${d.quantity}`).join(', ')}</p>}
-        {item.selectedPastas && item.selectedPastas.length > 0 && <p>義麵: {item.selectedPastas.map(p => `${p.name}x${p.quantity}`).join(', ')}</p>}
-        {item.selectedSingleChoiceAddon && <p>單點加購: {item.selectedSingleChoiceAddon}</p>}
-        {item.selectedAddons && item.selectedAddons.length > 0 && <p>其他加購: {item.selectedAddons.map(a => `${a.name} ($${a.price}) x${a.quantity}`).join(', ')}</p>}
-        {item.selectedNotes && <p>備註: {item.selectedNotes}</p>}
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex justify-center items-center p-4" onClick={onClose}>
-        <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <header className="p-5 relative border-b">
-                <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-800"><CloseIcon /></button>
-                <h2 className="text-2xl font-bold text-slate-800">訂單內容</h2>
-            </header>
-            <main className="px-6 py-4 space-y-4 overflow-y-auto bg-slate-50">
-                <div className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span className="text-slate-600">訂單編號:</span><span className="font-mono font-bold text-slate-800">{order.id}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-600">顧客:</span><span className="font-semibold">{order.customerInfo.name} ({order.customerInfo.phone})</span></div>
-                    <div className="flex justify-between"><span className="text-slate-600">類型:</span><span className="font-semibold">{order.orderType}{order.orderType === '內用' && order.customerInfo.tableNumber ? ` (${order.customerInfo.tableNumber}桌)`: ''}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-600">狀態:</span><span className={`px-2 py-0.5 font-semibold leading-tight rounded-full text-xs ${getStatusColor(order.status)}`}>{order.status}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-600">時間:</span><span className="font-semibold">{new Date(order.createdAt).toLocaleString()}</span></div>
-                </div>
-                <div className="border-t border-slate-300 pt-3 mt-3">
-                    <h4 className="text-base font-bold text-slate-700 mb-2">餐點內容</h4>
-                    <div className="bg-white p-3 rounded-md border">
-                        {order.items.map(renderOrderItem)}
-                    </div>
-                </div>
-            </main>
-            <footer className="p-4 border-t bg-slate-100">
-                <button 
-                    onClick={onClose} 
-                    className="w-full bg-slate-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-700 transition-colors"
-                >
-                    關閉
-                </button>
-            </footer>
-        </div>
-    </div>
-  );
-};
-
-const SalesTrendChart: React.FC<{ data: SalesStatistics['salesTrend'] }> = ({ data }) => {
-    if (!data || data.length === 0) {
-        return <p className="text-sm text-slate-500 text-center py-8">沒有足夠的資料來顯示圖表。</p>;
-    }
-
-    const maxRevenue = Math.max(...data.map(d => d.revenue), 0);
-    const chartHeight = 150;
-    const barWidth = 40;
-    const barMargin = 15;
-    const svgWidth = data.length * (barWidth + barMargin);
-
-    const formatDate = (dateStr: string) => {
-        const date = new Date(dateStr);
-        // Add time zone offset to prevent date from shifting
-        const userTimezoneOffset = date.getTimezoneOffset() * 60000;
-        const adjustedDate = new Date(date.getTime() + userTimezoneOffset);
-        return `${adjustedDate.getMonth() + 1}/${adjustedDate.getDate()}`;
-    };
-
-    return (
-        <div className="overflow-x-auto p-2 bg-slate-50 rounded-lg border">
-            <svg viewBox={`0 0 ${svgWidth} ${chartHeight + 30}`} className="min-w-full h-auto" aria-label="Sales trend bar chart">
-                <title>每日銷售趨勢圖</title>
-                {data.map((d, i) => {
-                    const barHeight = maxRevenue > 0 ? (d.revenue / maxRevenue) * chartHeight : 0;
-                    const x = i * (barWidth + barMargin);
-                    const y = chartHeight - barHeight;
-
-                    return (
-                        <g key={d.date} className="group" transform={`translate(${x}, 0)`} role="figure" aria-label={`日期: ${d.date}, 營收: $${d.revenue.toLocaleString()}`}>
-                            {/* Tooltip */}
-                            <text
-                                x={barWidth / 2}
-                                y={y - 5}
-                                textAnchor="middle"
-                                className="text-xs font-bold fill-slate-700 opacity-0 group-hover:opacity-100 transition-opacity"
-                                role="tooltip"
-                            >
-                                ${d.revenue.toLocaleString()}
-                            </text>
-                            
-                            {/* Bar */}
-                            <rect
-                                x="0"
-                                y={y}
-                                width={barWidth}
-                                height={barHeight}
-                                className="fill-green-500 hover:fill-green-600 transition-colors rounded-t-sm"
-                                rx="2"
-                            />
-                            
-                            {/* Date Label */}
-                            <text
-                                x={barWidth / 2}
-                                y={chartHeight + 15}
-                                textAnchor="middle"
-                                className="text-xxs fill-slate-500"
-                            >
-                                {formatDate(d.date)}
-                            </text>
-                        </g>
-                    );
-                })}
-            </svg>
-        </div>
-    );
-};
-
-
-interface AdminDashboardProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onPrintRequest: (content: React.ReactNode) => void;
-    onStoreUpdate: () => void;
+interface IconProps {
+    className?: string;
 }
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose, onPrintRequest, onStoreUpdate }) => {
-    const [activeTab, setActiveTab] = useState('orders');
-    const [orders, setOrders] = useState<Order[]>([]);
-    const [stats, setStats] = useState<SalesStatistics | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-    const [dateRange, setDateRange] = useState({
-        startDate: new Date(new Date().setDate(new Date().getDate() - 6)).toISOString().split('T')[0],
-        endDate: new Date().toISOString().split('T')[0],
-    });
+export const PlusIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+  </svg>
+);
 
-    const fetchAllOrders = useCallback(async () => {
-        setIsLoading(true);
-        setError(null);
-        const result = await apiService.getAllOrders();
-        if (result.success && result.orders) {
-            setOrders(result.orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-        } else {
-            setError(result.message || '無法取得訂單');
-        }
-        setIsLoading(false);
-    }, []);
+export const MinusIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" />
+  </svg>
+);
 
-    const fetchStats = useCallback(async () => {
-        setIsLoading(true);
-        setError(null);
-        const result = await apiService.getSalesStatistics(dateRange.startDate, dateRange.endDate);
-        if (result.success && result.stats) {
-            setStats(result.stats);
-        } else {
-            setError(result.message || '無法取得統計資料');
-            setStats(null);
-        }
-        setIsLoading(false);
-    }, [dateRange]);
+export const TrashIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+  </svg>
+);
 
-    useEffect(() => {
-        if (isOpen && activeTab === 'orders') {
-            fetchAllOrders();
-        }
-    }, [isOpen, activeTab, fetchAllOrders]);
-    
-    // Note: fetchStats is now called on-demand via the search button, not via useEffect on tab change.
+export const CloseIcon: React.FC<IconProps> = ({ className = "h-6 w-6" }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
 
-    useEffect(() => {
-        if (isOpen && activeTab === 'orders') {
-            const interval = setInterval(fetchAllOrders, 30000);
-            return () => clearInterval(interval);
-        }
-    }, [isOpen, activeTab, fetchAllOrders]);
+export const CartIcon: React.FC<IconProps> = ({ className = "h-6 w-6" }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m-6 4a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+  </svg>
+);
 
-    const handleUpdateStatus = async (orderId: string, status: OrderStatus) => {
-        const originalOrders = [...orders];
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
-        const result = await apiService.updateOrderStatus(orderId, status);
-        if (!result.success) {
-            setOrders(originalOrders);
-            alert(`狀態更新失敗: ${result.message}`);
-        }
-    };
+export const CheckIcon: React.FC<IconProps> = ({ className = "h-6 w-6" }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+  </svg>
+);
 
-    const activeOrders = useMemo(() => orders.filter(o => o.status !== '已完成' && o.status !== '錯誤'), [orders]);
+export const SearchIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+);
 
-    if (!isOpen) return null;
+export const RefreshIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+    </svg>
+);
 
-    return (
-        <div className={`fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-2 sm:p-4 transition-opacity ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-            <div className="bg-white rounded-lg shadow-2xl w-full h-full flex flex-col">
-                <header className="p-4 relative border-b flex justify-between items-center">
-                    <h2 className="text-xl sm:text-2xl font-bold text-slate-800">管理後台</h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-800"><CloseIcon /></button>
-                </header>
+export const PencilIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z" />
+    </svg>
+);
 
-                <div className="border-b border-slate-200">
-                    <nav className="flex space-x-2 sm:space-x-4 px-4">
-                        <button onClick={() => setActiveTab('orders')} className={`py-3 px-2 sm:px-4 font-semibold text-sm sm:text-base ${activeTab === 'orders' ? 'border-b-2 border-green-600 text-green-600' : 'text-slate-500 hover:text-slate-700'}`}>
-                            即時訂單 <span className="bg-green-100 text-green-700 text-xs font-bold rounded-full px-2 py-0.5">{activeOrders.length}</span>
-                        </button>
-                        <button onClick={() => setActiveTab('stats')} className={`py-3 px-2 sm:px-4 font-semibold text-sm sm:text-base ${activeTab === 'stats' ? 'border-b-2 border-green-600 text-green-600' : 'text-slate-500 hover:text-slate-700'}`}>
-                            銷售統計
-                        </button>
-                        <button onClick={() => setActiveTab('availability')} className={`py-3 px-2 sm:px-4 font-semibold text-sm sm:text-base ${activeTab === 'availability' ? 'border-b-2 border-green-600 text-green-600' : 'text-slate-500 hover:text-slate-700'}`}>
-                            商店管理
-                        </button>
-                    </nav>
-                </div>
+export const SparklesIcon: React.FC<IconProps> = ({ className = "h-6 w-6" }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.572L16.5 21.75l-.398-1.178a3.375 3.375 0 00-2.455-2.456L12.75 18l1.178-.398a3.375 3.375 0 002.455-2.456L16.5 14.25l.398 1.178a3.375 3.375 0 002.456 2.456L20.25 18l-1.178.398a3.375 3.375 0 00-2.456 2.456z" />
+    </svg>
+);
 
-                <main className="flex-1 overflow-auto bg-slate-50 p-2 sm:p-6">
-                    {error && <p className="text-red-500 bg-red-100 p-3 rounded-md text-center">{error}</p>}
-                    
-                    {activeTab === 'orders' && (
-                        <div>
-                            <div className="flex justify-end mb-4">
-                                <button onClick={fetchAllOrders} disabled={isLoading} className="flex items-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium disabled:bg-slate-400">
-                                    <RefreshIcon className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}/>
-                                    <span>{isLoading ? '刷新中' : '刷新'}</span>
-                                </button>
-                            </div>
-                            {isLoading && !orders.length ? (
-                                <p className="text-center text-slate-500 py-10">讀取中...</p>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                    {ORDER_STATUSES.filter(s => s !== '已完成').map(status => (
-                                        <div key={status} className="bg-slate-100 rounded-lg p-2 h-full">
-                                            <h3 className={`font-bold text-md text-center p-2 rounded-t-md ${getStatusColor(status)}`}>{status}</h3>
-                                            <div className="space-y-3 pt-2">
-                                                {orders.filter(o => o.status === status).sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()).map(order => (
-                                                    <div key={order.id} className="bg-white p-3 rounded-md shadow-sm border">
-                                                        <div className="flex justify-between items-start">
-                                                            <p className="font-bold text-slate-800">{order.customerInfo.name} ({order.orderType === '內用' ? `${order.customerInfo.tableNumber || '?'}桌` : '外帶'})</p>
-                                                            <p className="font-mono text-xs text-slate-500">{order.id.slice(-6)}</p>
-                                                        </div>
-                                                        <p className="text-xs text-slate-500">{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                                                        <div className="mt-2 border-t pt-2 max-h-24 overflow-y-auto">
-                                                            {order.items.map(item => ( <p key={item.cartId} className="text-xs text-slate-700 truncate">{item.item.name.replace(/半全餐|半套餐/g, '套餐')} x{item.quantity}</p> ))}
-                                                        </div>
-                                                        <div className="flex justify-between items-center mt-2 border-t pt-2">
-                                                            <p className="font-bold text-lg text-green-700">${order.totalPrice}</p>
-                                                            <button onClick={() => setSelectedOrder(order)} className="text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-1 rounded-md hover:bg-blue-200">詳情</button>
-                                                        </div>
-                                                        <div className="mt-2 space-y-1">
-                                                            <select value={order.status} onChange={e => handleUpdateStatus(order.id, e.target.value as OrderStatus)} className="w-full p-1 text-xs border rounded-md bg-white focus:ring-2 focus:ring-green-500 outline-none">
-                                                                {ORDER_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-                                                            </select>
-                                                            <button onClick={() => onPrintRequest(<PrintableOrder order={order} />)} className="w-full text-xs p-1.5 border rounded-md hover:bg-slate-100 transition-colors">列印</button>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                    
-                    {activeTab === 'stats' && (
-                         <div>
-                            <div className="flex flex-wrap items-center gap-2 sm:gap-4 p-4 bg-white rounded-lg shadow mb-6">
-                                <label className="text-sm font-medium">從 <input type="date" value={dateRange.startDate} onChange={e => setDateRange(p => ({...p, startDate: e.target.value}))} className="p-2 border rounded-md" /></label>
-                                <label className="text-sm font-medium">到 <input type="date" value={dateRange.endDate} onChange={e => setDateRange(p => ({...p, endDate: e.target.value}))} className="p-2 border rounded-md" /></label>
-                                <button onClick={fetchStats} disabled={isLoading} className="px-4 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 disabled:bg-slate-400">
-                                    {isLoading ? '查詢中...' : '查詢'}
-                                </button>
-                            </div>
-                            {isLoading ? (
-                                <p className="text-center text-slate-500 py-10">讀取中...</p>
-                            ) : stats ? (
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                        <div className="bg-white p-6 rounded-lg shadow"><p className="text-sm text-slate-500">總收入</p><p className="text-3xl font-bold text-slate-800">${stats.totalRevenue.toLocaleString()}</p></div>
-                                        <div className="bg-white p-6 rounded-lg shadow"><p className="text-sm text-slate-500">總訂單數</p><p className="text-3xl font-bold text-slate-800">{stats.orderCount}</p></div>
-                                    </div>
-                                    <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow">
-                                        <h3 className="font-bold text-lg mb-4 text-slate-700">熱門品項</h3>
-                                        <div className="overflow-y-auto max-h-96 pr-2">
-                                            <table className="w-full text-sm text-left">
-                                                <thead className="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0">
-                                                    <tr>
-                                                        <th scope="col" className="px-4 py-3">品項</th>
-                                                        <th scope="col" className="px-4 py-3 text-right">售出數量</th>
-                                                        <th scope="col" className="px-4 py-3 text-right">總營收</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {stats.popularItems.map(item => (
-                                                        <tr key={item.name} className="border-b hover:bg-slate-50">
-                                                            <td className="px-4 py-2 font-medium text-slate-800 whitespace-nowrap">{item.name}</td>
-                                                            <td className="px-4 py-2 text-right">{item.quantity} 份</td>
-                                                            <td className="px-4 py-2 text-right">${item.revenue.toLocaleString()}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                    <div className="bg-white p-6 rounded-lg shadow">
-                                        <h3 className="font-bold text-lg mb-4 text-slate-700">銷售趨勢</h3>
-                                        <SalesTrendChart data={stats.salesTrend} />
-                                    </div>
-                                </div>
-                            ) : (
-                                <p className="text-center text-slate-500 py-10">請選擇日期範圍以查看統計資料。</p>
-                            )}
-                        </div>
-                    )}
+export const SendIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+    </svg>
+);
 
-                    {activeTab === 'availability' && <AvailabilityManager isOpen={isOpen} onStoreUpdate={onStoreUpdate} />}
+export const SpeakerWaveIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+    </svg>
+);
 
-                </main>
-            </div>
-            {selectedOrder && <OrderDetailModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />}
-        </div>
-    );
-};
+export const SpeakerXMarkIcon: React.FC<IconProps> = ({ className = "h-5 w-5" }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+    </svg>
+);
